@@ -336,6 +336,11 @@
             <form onsubmit="generateQCM(event)">
                 <div class="space-y-4">
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de QCM à générer *</label>
+                        <input type="number" id="qcm-count" required min="1" max="50" value="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Entre 1 et 50 QCM (recommandé: 10-20 pour un batch rapide)</p>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Thème médical</label>
                         <select id="qcm-theme" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             <option value="">-- Choisir --</option>
@@ -347,6 +352,10 @@
                             <option value="Dermatologie">Dermatologie</option>
                             <option value="Psychiatrie">Psychiatrie/Santé Mentale</option>
                             <option value="Gynécologie">Gynécologie</option>
+                            <option value="Endocrinologie">Endocrinologie</option>
+                            <option value="Pneumologie">Pneumologie</option>
+                            <option value="Gastroentérologie">Gastroentérologie</option>
+                            <option value="Rhumatologie">Rhumatologie</option>
                         </select>
                     </div>
                     <div>
@@ -360,7 +369,8 @@
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <p class="text-xs text-blue-800">
                             <i class="fas fa-info-circle mr-1"></i>
-                            <strong>Note :</strong> La génération prend 15-30 secondes. Le QCM sera conforme aux guidelines OMS/WHO.
+                            <strong>Durée estimée :</strong> 
+                            <span id="qcm-time-estimate">~2-5 minutes pour 10 QCM</span>
                         </p>
                     </div>
                 </div>
@@ -390,6 +400,11 @@
             <form onsubmit="generateClinicalCase(event)">
                 <div class="space-y-4">
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de cas à générer *</label>
+                        <input type="number" id="case-count" required min="1" max="30" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <p class="text-xs text-gray-500 mt-1">Entre 1 et 30 cas (recommandé: 5-10 pour un batch rapide)</p>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Spécialité</label>
                         <select id="case-specialty" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                             <option value="">-- Choisir --</option>
@@ -399,6 +414,10 @@
                             <option value="Cardiologie">Cardiologie</option>
                             <option value="Dermatologie">Dermatologie</option>
                             <option value="Endocrinologie">Endocrinologie</option>
+                            <option value="Pneumologie">Pneumologie</option>
+                            <option value="Gastroentérologie">Gastroentérologie</option>
+                            <option value="Gynécologie">Gynécologie</option>
+                            <option value="Psychiatrie">Psychiatrie</option>
                         </select>
                     </div>
                     <div>
@@ -412,7 +431,8 @@
                     <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
                         <p class="text-xs text-purple-800">
                             <i class="fas fa-info-circle mr-1"></i>
-                            <strong>Note :</strong> Génération 20-40 secondes. Cas réaliste avec anamnèse, examen clinique, et plan de traitement.
+                            <strong>Durée estimée :</strong> 
+                            <span id="case-time-estimate">~3-7 minutes pour 5 cas</span>
                         </p>
                     </div>
                 </div>
@@ -1079,29 +1099,80 @@
             document.getElementById('generate-qcm-modal').classList.remove('flex');
         }
 
+        // Update time estimate when QCM count changes
+        document.addEventListener('DOMContentLoaded', () => {
+            const qcmCountInput = document.getElementById('qcm-count');
+            if (qcmCountInput) {
+                qcmCountInput.addEventListener('input', (e) => {
+                    const count = parseInt(e.target.value) || 10;
+                    const minMinutes = Math.ceil(count * 0.2);
+                    const maxMinutes = Math.ceil(count * 0.5);
+                    document.getElementById('qcm-time-estimate').textContent = 
+                        `~${minMinutes}-${maxMinutes} minutes pour ${count} QCM`;
+                });
+            }
+            
+            const caseCountInput = document.getElementById('case-count');
+            if (caseCountInput) {
+                caseCountInput.addEventListener('input', (e) => {
+                    const count = parseInt(e.target.value) || 5;
+                    const minMinutes = Math.ceil(count * 0.5);
+                    const maxMinutes = Math.ceil(count * 1.5);
+                    document.getElementById('case-time-estimate').textContent = 
+                        `~${minMinutes}-${maxMinutes} minutes pour ${count} cas`;
+                });
+            }
+        });
+
         async function generateQCM(event) {
             event.preventDefault();
             
+            const count = parseInt(document.getElementById('qcm-count').value);
             const theme = document.getElementById('qcm-theme').value;
             const difficulty = document.getElementById('qcm-difficulty').value;
             
+            if (count < 1 || count > 50) {
+                alert('❌ Le nombre de QCM doit être entre 1 et 50');
+                return;
+            }
+            
             hideGenerateQCMModal();
             
-            // Show loading
+            // Show loading with progress
             const qcmListDiv = document.getElementById('qcm-list');
-            qcmListDiv.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i><p class="mt-4 text-gray-600">Génération en cours... (15-30s)</p></div>';
+            const estimatedTime = Math.ceil(count * 0.35);
+            qcmListDiv.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-5xl text-blue-600 mb-4"></i>
+                    <p class="text-xl font-semibold text-gray-900 mb-2">Génération en cours...</p>
+                    <p class="text-gray-600 mb-4">Génération de ${count} QCM sur le thème "${theme}"</p>
+                    <div class="bg-blue-50 rounded-lg p-4 max-w-md mx-auto">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-clock mr-2"></i>
+                            Temps estimé: ~${estimatedTime} minutes
+                        </p>
+                        <p class="text-xs text-blue-600 mt-2">
+                            Ne fermez pas cette page. La génération se fait en arrière-plan.
+                        </p>
+                    </div>
+                </div>
+            `;
             
             try {
                 const response = await fetch(`${API_BASE}/generate/qcm`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ theme, difficulty })
+                    body: JSON.stringify({ 
+                        theme, 
+                        difficulty,
+                        count 
+                    })
                 });
                 
                 const data = await response.json();
                 
-                if (data.success || data.id) {
-                    alert('✅ QCM généré avec succès !');
+                if (data.success) {
+                    alert(`✅ ${data.count || count} QCM générés avec succès !`);
                     loadContent();
                     loadDashboard();
                 } else {
@@ -1128,32 +1199,77 @@
         async function generateClinicalCase(event) {
             event.preventDefault();
             
+            const count = parseInt(document.getElementById('case-count').value);
             const specialty = document.getElementById('case-specialty').value;
             const complexity = document.getElementById('case-complexity').value;
             
+            if (count < 1 || count > 30) {
+                alert('❌ Le nombre de cas doit être entre 1 et 30');
+                return;
+            }
+            
             hideGenerateCaseModal();
             
-            // Show loading
+            // Show loading with progress
             const caseListDiv = document.getElementById('case-list');
-            caseListDiv.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-3xl text-purple-600"></i><p class="mt-4 text-gray-600">Génération en cours... (20-40s)</p></div>';
+            const estimatedTime = Math.ceil(count * 1);
+            caseListDiv.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-5xl text-purple-600 mb-4"></i>
+                    <p class="text-xl font-semibold text-gray-900 mb-2">Génération en cours...</p>
+                    <p class="text-gray-600 mb-4">Génération de ${count} cas cliniques en "${specialty}"</p>
+                    <div class="bg-purple-50 rounded-lg p-4 max-w-md mx-auto">
+                        <p class="text-sm text-purple-800">
+                            <i class="fas fa-clock mr-2"></i>
+                            Temps estimé: ~${estimatedTime} minutes
+                        </p>
+                        <p class="text-xs text-purple-600 mt-2">
+                            Ne fermez pas cette page. La génération se fait en arrière-plan.
+                        </p>
+                    </div>
+                </div>
+            `;
             
             try {
-                const response = await fetch(`${API_BASE}/generate/clinical-case`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ specialty, complexity })
-                });
+                // Générer les cas cliniques un par un (car chaque cas est complexe)
+                let successCount = 0;
                 
-                const data = await response.json();
-                
-                if (data.success || data.id) {
-                    alert('✅ Cas clinique généré avec succès !');
-                    loadContent();
-                    loadDashboard();
-                } else {
-                    alert('❌ ' + (data.error || 'Erreur lors de la génération'));
-                    loadContent();
+                for (let i = 0; i < count; i++) {
+                    try {
+                        const response = await fetch(`${API_BASE}/generate/clinical-case`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ specialty, complexity })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success || data.clinical_case) {
+                            successCount++;
+                            
+                            // Update progress
+                            caseListDiv.innerHTML = `
+                                <div class="text-center py-12">
+                                    <i class="fas fa-spinner fa-spin text-5xl text-purple-600 mb-4"></i>
+                                    <p class="text-xl font-semibold text-gray-900 mb-2">Génération en cours...</p>
+                                    <p class="text-gray-600 mb-4">Progression: ${successCount}/${count} cas générés</p>
+                                    <div class="w-full max-w-md mx-auto bg-gray-200 rounded-full h-4 mb-4">
+                                        <div class="bg-purple-600 h-4 rounded-full transition-all" style="width: ${(successCount/count*100).toFixed(0)}%"></div>
+                                    </div>
+                                    <p class="text-sm text-purple-600">
+                                        Temps restant estimé: ~${Math.ceil((count - successCount) * 1)} minutes
+                                    </p>
+                                </div>
+                            `;
+                        }
+                    } catch (err) {
+                        console.error('Error generating case:', err);
+                    }
                 }
+                
+                alert(`✅ ${successCount}/${count} cas cliniques générés avec succès !`);
+                loadContent();
+                loadDashboard();
             } catch (error) {
                 alert('❌ Erreur: ' + error.message);
                 loadContent();

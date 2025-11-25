@@ -66,7 +66,7 @@
                     return;
                 }
 
-                displayResults(data.results);
+                displayResults(data);
 
             } catch (error) {
                 console.error('Error loading results:', error);
@@ -93,7 +93,7 @@
                         <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
                             <div class="text-center">
                                 <p class="text-sm opacity-90 mb-2">Score T-MCQ</p>
-                                <p class="text-5xl font-bold mb-2">${results.tmcq_score ? results.tmcq_score.toFixed(1) : 'N/A'}</p>
+                                <p class="text-5xl font-bold mb-2">${results.tmcq_score != null ? Number(results.tmcq_score).toFixed(1) : 'N/A'}</p>
                                 <p class="text-sm opacity-75">sur 100</p>
                             </div>
                         </div>
@@ -101,7 +101,7 @@
                         <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
                             <div class="text-center">
                                 <p class="text-sm opacity-90 mb-2">Score QCM</p>
-                                <p class="text-5xl font-bold mb-2">${results.qcm_score ? results.qcm_score.toFixed(0) : 0}%</p>
+                                <p class="text-5xl font-bold mb-2">${results.qcm_score != null ? Number(results.qcm_score).toFixed(0) : 0}%</p>
                                 <p class="text-sm opacity-75">${results.qcm_correct || 0} / ${results.qcm_total || 0} correct</p>
                             </div>
                         </div>
@@ -109,7 +109,7 @@
                         <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
                             <div class="text-center">
                                 <p class="text-sm opacity-90 mb-2">Score Cas Cliniques</p>
-                                <p class="text-5xl font-bold mb-2">${results.case_score ? results.case_score.toFixed(0) : 0}%</p>
+                                <p class="text-5xl font-bold mb-2">${results.case_score != null ? Number(results.case_score).toFixed(0) : 0}%</p>
                                 <p class="text-sm opacity-75">${results.case_correct || 0} / ${results.case_total || 0} correct</p>
                             </div>
                         </div>

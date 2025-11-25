@@ -542,23 +542,19 @@ evaluations.get('/results/:id', async (c) => {
     
     return c.json({
       success: true,
-      results: {
-        id: result.id,
-        evaluation_name: 'Évaluation Médicale',
-        tmcq_score: result.tmcq_total,
-        qcm_score: result.qcm_score,
-        case_score: result.clinical_cases_score,
-        qcm_correct: 0,
-        qcm_total: 0,
-        case_correct: 0,
-        case_total: 0,
-        status: result.status,
-        created_at: result.created_at,
-        details: {
-          qcms: [],
-          cases: []
-        }
-      }
+      id: result.id,
+      evaluation_name: 'Évaluation Médicale',
+      tmcq_score: result.tmcq_total || 0,
+      qcm_score: result.qcm_score || 0,
+      case_score: result.clinical_cases_score || 0,
+      qcm_correct: 0,
+      qcm_total: 0,
+      case_correct: 0,
+      case_total: 0,
+      status: result.status,
+      created_at: result.created_at,
+      qcm_details: [],
+      case_details: []
     })
   } catch (error: any) {
     console.error('Get Results Error:', error)

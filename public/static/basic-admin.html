@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIBOK Admin - Dashboard Basique</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        
+        .stat-card .label {
+            color: #6b7280;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .doctors-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+        
+        .doctors-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .doctor-card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .doctor-card .name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+        
+        .doctor-card .specialty {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .doctor-card .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-apte {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-supervision {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-formation {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .actions {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .actions h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            padding: 50px;
+        }
+        
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .debug {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #374151;
+            overflow-x: auto;
+        }
+        
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 TIBOK Medical Evaluation</h1>
+            <p style="color: #6b7280; margin: 10px 0;">Dashboard Administrateur</p>
+            <div class="status" id="system-status">🔄 Chargement...</div>
+        </div>
+        
+        <div id="loading" class="loading">
+            ⏳ Chargement des données...
+        </div>
+        
+        <div id="content" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Médecins</div>
+                    <div class="number" id="stat-doctors">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">QCM Disponibles</div>
+                    <div class="number" id="stat-qcm">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Cas Cliniques</div>
+                    <div class="number" id="stat-cases">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Alertes Actives</div>
+                    <div class="number" id="stat-alerts">0</div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <h3>🔧 Actions Rapides</h3>
+                <button onclick="testAPI()">🔍 Tester l'API</button>
+                <button onclick="loadStats()">🔄 Rafraîchir les Stats</button>
+                <button onclick="loadDoctors()">👥 Recharger les Médecins</button>
+                <button onclick="generateQCM()">➕ Générer un QCM</button>
+            </div>
+            
+            <div class="doctors-section">
+                <h2>👥 Liste des Médecins</h2>
+                <div id="doctors-list"></div>
+            </div>
+            
+            <div class="actions">
+                <h3>🐛 Debug & Test</h3>
+                <div id="debug-output" class="debug"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '/api';
+        let debugLog = [];
+        
+        function log(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString('fr-FR');
+            const logEntry = `[${timestamp}] ${message}`;
+            debugLog.push(logEntry);
+            if (data) {
+                debugLog.push(JSON.stringify(data, null, 2));
+            }
+            updateDebug();
+            console.log(logEntry, data);
+        }
+        
+        function updateDebug() {
+            const debugOutput = document.getElementById('debug-output');
+            if (debugOutput) {
+                debugOutput.textContent = debugLog.slice(-20).join('\n');
+            }
+        }
+        
+        async function testAPI() {
+            log('🔍 Test de connexion API...');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                log('✅ API Health Check réussi', data);
+                
+                if (data.status === 'healthy') {
+                    showMessage('✅ API opérationnelle !', 'success');
+                } else {
+                    showMessage('⚠️ API répond mais status anormal', 'error');
+                }
+            } catch (error) {
+                log('❌ Erreur API Health Check', error.message);
+                showMessage('❌ Impossible de contacter l\'API', 'error');
+            }
+        }
+        
+        async function loadStats() {
+            log('📊 Chargement des statistiques...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/stats`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const stats = await response.json();
+                log('✅ Stats chargées', stats);
+                
+                document.getElementById('stat-doctors').textContent = stats.total_doctors || 0;
+                document.getElementById('stat-qcm').textContent = stats.total_qcm || 0;
+                document.getElementById('stat-cases').textContent = stats.total_cases || 0;
+                document.getElementById('stat-alerts').textContent = stats.unresolved_alerts || 0;
+                
+                document.getElementById('system-status').textContent = '✅ Système Opérationnel';
+                document.getElementById('system-status').style.background = '#10b981';
+                
+            } catch (error) {
+                log('❌ Erreur lors du chargement des stats', error.message);
+                showMessage('❌ Impossible de charger les statistiques', 'error');
+            }
+        }
+        
+        async function loadDoctors() {
+            log('👥 Chargement de la liste des médecins...');
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctors`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                log('✅ Médecins chargés', data);
+                
+                const doctorsList = document.getElementById('doctors-list');
+                
+                if (!data.doctors || data.doctors.length === 0) {
+                    doctorsList.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">Aucun médecin enregistré</p>';
+                    return;
+                }
+                
+                doctorsList.innerHTML = data.doctors.map(doctor => {
+                    let statusClass = 'status-apte';
+                    let statusText = 'Apte';
+                    
+                    if (doctor.evaluation_status === 'supervision_requise') {
+                        statusClass = 'status-supervision';
+                        statusText = 'Supervision';
+                    } else if (doctor.evaluation_status === 'formation_requise') {
+                        statusClass = 'status-formation';
+                        statusText = 'Formation requise';
+                    }
+                    
+                    return `
+                        <div class="doctor-card">
+                            <div class="name">Dr. ${doctor.name}</div>
+                            <div class="specialty">${doctor.specialty || 'Non spécifié'} • ${doctor.email}</div>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                            ${doctor.tmcq_total ? `<span style="margin-left: 10px; color: #6b7280;">Score T-MCQ: ${doctor.tmcq_total}</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                log('❌ Erreur lors du chargement des médecins', error.message);
+                showMessage('❌ Impossible de charger la liste des médecins', 'error');
+            }
+        }
+        
+        async function generateQCM() {
+            log('➕ Génération d\'un nouveau QCM...');
+            showMessage('🔄 Génération en cours (cela peut prendre 10-30s)...', 'success');
+            
+            try {
+                const response = await fetch(`${API_BASE}/generate/qcm`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        theme: 'Médecine Générale',
+                        difficulty: 'intermediate'
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Erreur de génération');
+                }
+                
+                const qcm = await response.json();
+                log('✅ QCM généré avec succès', qcm);
+                showMessage('✅ QCM généré ! ID: ' + qcm.id, 'success');
+                
+                // Rafraîchir les stats
+                await loadStats();
+                
+            } catch (error) {
+                log('❌ Erreur génération QCM', error.message);
+                showMessage('❌ ' + error.message, 'error');
+            }
+        }
+        
+        function showMessage(text, type) {
+            const actions = document.querySelector('.actions');
+            const existing = document.querySelector('.message');
+            if (existing) existing.remove();
+            
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = text;
+            actions.insertBefore(div, actions.firstChild);
+            
+            setTimeout(() => div.remove(), 5000);
+        }
+        
+        // Initialisation au chargement
+        window.addEventListener('DOMContentLoaded', async () => {
+            log('🚀 Initialisation du dashboard...');
+            
+            try {
+                // Tester l'API
+                await testAPI();
+                
+                // Charger les données
+                await loadStats();
+                await loadDoctors();
+                
+                // Afficher le contenu
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+                log('✅ Dashboard initialisé avec succès');
+                
+            } catch (error) {
+                log('❌ Erreur lors de l\'initialisation', error.message);
+                document.getElementById('loading').innerHTML = `
+                    <div class="error">
+                        ❌ Erreur d'initialisation: ${error.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

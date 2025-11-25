@@ -368,6 +368,17 @@ evaluations.post('/start', async (c) => {
       ORDER BY etc.order_index
     `).bind(template_id).all()
     
+    // Helper function to safely parse JSON or return as-is if string
+    const safeParse = (value: any) => {
+      if (!value) return null
+      if (typeof value === 'object') return value
+      try {
+        return JSON.parse(value as string)
+      } catch {
+        return value // Return as-is if not valid JSON (plain string)
+      }
+    }
+    
     return c.json({
       success: true,
       evaluation: {
@@ -383,10 +394,10 @@ evaluations.post('/start', async (c) => {
         })),
         cases: cases.results.map(c => ({
           ...c,
-          patient_profile: c.patient_profile,
+          patient_profile: safeParse(c.patient_profile),
           presentation: c.presentation,
-          anamnesis: c.anamnesis,
-          questions: JSON.parse(c.questions as string)
+          anamnesis: safeParse(c.anamnesis),
+          questions: safeParse(c.questions)
         }))
       }
     })

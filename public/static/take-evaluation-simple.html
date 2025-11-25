@@ -155,12 +155,15 @@
                     <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-6">
                         <p class="text-sm">${c.presentation}</p>
                     </div>
-                    ${c.anamnesis && c.anamnesis.length > 0 ? `
+                    ${c.anamnesis ? `
                         <div class="mb-6">
                             <h3 class="font-bold mb-2">Anamnèse:</h3>
-                            <ul class="list-disc list-inside space-y-1">
-                                ${c.anamnesis.map(item => `<li class="text-sm">${item}</li>`).join('')}
-                            </ul>
+                            ${Array.isArray(c.anamnesis) 
+                                ? `<ul class="list-disc list-inside space-y-1">
+                                    ${c.anamnesis.map(item => `<li class="text-sm">${item}</li>`).join('')}
+                                   </ul>`
+                                : `<p class="text-sm text-gray-700">${c.anamnesis}</p>`
+                            }
                         </div>
                     ` : ''}
                     ${c.questions && c.questions.length > 0 ? c.questions.map((sq, idx) => {

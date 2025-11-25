@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats de l'évaluation - Tibok Medical Evaluation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-blue-600">
+                    <i class="fas fa-chart-bar mr-2"></i>Résultats de l'évaluation
+                </h1>
+                <div class="space-x-3">
+                    <button onclick="window.print()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        <i class="fas fa-print mr-2"></i>Imprimer
+                    </button>
+                    <button onclick="window.location.href='/static/doctor-dashboard.html'" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-home mr-2"></i>Retour au Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div id="results-content">
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-5xl text-blue-600 mb-4"></i>
+                <p class="text-xl text-gray-700">Chargement des résultats...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '/api';
+        const token = localStorage.getItem('doctor_token');
+        
+        if (!token) {
+            window.location.href = '/static/login.html';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const evaluationId = urlParams.get('id');
+
+        async function loadResults() {
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/results/${evaluationId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('❌ Impossible de charger les résultats');
+                    window.location.href = '/static/doctor-dashboard.html';
+                    return;
+                }
+
+                displayResults(data.results);
+
+            } catch (error) {
+                console.error('Error loading results:', error);
+                alert('❌ Erreur lors du chargement des résultats');
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('results-content');
+
+            const statusBadge = getStatusBadge(results.status);
+            const statusColor = results.status === 'apte' ? 'green' : 
+                               results.status === 'supervision_requise' ? 'yellow' : 'red';
+
+            container.innerHTML = `
+                <!-- Score Summary -->
+                <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2">${results.evaluation_name}</h2>
+                        <p class="text-gray-600">Passé le ${new Date(results.created_at).toLocaleString('fr-FR')}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+                            <div class="text-center">
+                                <p class="text-sm opacity-90 mb-2">Score T-MCQ</p>
+                                <p class="text-5xl font-bold mb-2">${results.tmcq_score ? results.tmcq_score.toFixed(1) : 'N/A'}</p>
+                                <p class="text-sm opacity-75">sur 100</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+                            <div class="text-center">
+                                <p class="text-sm opacity-90 mb-2">Score QCM</p>
+                                <p class="text-5xl font-bold mb-2">${results.qcm_score ? results.qcm_score.toFixed(0) : 0}%</p>
+                                <p class="text-sm opacity-75">${results.qcm_correct || 0} / ${results.qcm_total || 0} correct</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
+                            <div class="text-center">
+                                <p class="text-sm opacity-90 mb-2">Score Cas Cliniques</p>
+                                <p class="text-5xl font-bold mb-2">${results.case_score ? results.case_score.toFixed(0) : 0}%</p>
+                                <p class="text-sm opacity-75">${results.case_correct || 0} / ${results.case_total || 0} correct</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-${statusColor}-50 border-2 border-${statusColor}-200 rounded-lg p-6 text-center">
+                        <p class="text-lg font-semibold text-gray-700 mb-2">Statut TIBOK</p>
+                        <div class="text-3xl">${statusBadge}</div>
+                        <p class="text-sm text-gray-600 mt-4">
+                            ${getStatusMessage(results.status)}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Performance Chart -->
+                <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-chart-pie mr-2 text-blue-600"></i>
+                        Répartition des performances
+                    </h3>
+                    <canvas id="performance-chart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Detailed Questions -->
+                ${results.details ? `
+                    <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+                        <h3 class="text-xl font-bold text-gray-900 mb-6">
+                            <i class="fas fa-list-check mr-2 text-purple-600"></i>
+                            Détail des questions
+                        </h3>
+                        
+                        ${results.details.qcms && results.details.qcms.length > 0 ? `
+                            <h4 class="text-lg font-bold text-gray-800 mb-4">QCM (${results.qcm_correct}/${results.qcm_total})</h4>
+                            <div class="space-y-4 mb-8">
+                                ${results.details.qcms.map((q, idx) => `
+                                    <div class="border-2 ${q.correct ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} rounded-lg p-4">
+                                        <div class="flex items-start justify-between mb-2">
+                                            <div class="flex-1">
+                                                <span class="text-sm font-semibold ${q.correct ? 'text-green-700' : 'text-red-700'}">
+                                                    Question ${idx + 1}
+                                                </span>
+                                                <span class="ml-2 text-xs text-gray-600">${q.topic} - ${q.difficulty}</span>
+                                            </div>
+                                            <span class="text-2xl">
+                                                ${q.correct ? '✅' : '❌'}
+                                            </span>
+                                        </div>
+                                        <p class="text-gray-900 font-medium mb-3">${q.question}</p>
+                                        <div class="space-y-2 text-sm">
+                                            <p>
+                                                <strong class="${q.correct ? 'text-green-700' : 'text-red-700'}">Votre réponse:</strong> 
+                                                ${q.user_answer || 'Non répondu'}
+                                            </p>
+                                            ${!q.correct ? `
+                                                <p>
+                                                    <strong class="text-green-700">Réponse correcte:</strong> 
+                                                    ${q.correct_answer}
+                                                </p>
+                                            ` : ''}
+                                            ${q.explanation ? `
+                                                <div class="mt-3 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                                                    <p class="text-sm text-blue-900">
+                                                        <strong>💡 Justification:</strong> ${q.explanation}
+                                                    </p>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+
+                        ${results.details.cases && results.details.cases.length > 0 ? `
+                            <h4 class="text-lg font-bold text-gray-800 mb-4">Cas Cliniques (${results.case_correct}/${results.case_total})</h4>
+                            <div class="space-y-6">
+                                ${results.details.cases.map((c, idx) => `
+                                    <div class="border-2 border-purple-200 bg-purple-50 rounded-lg p-4">
+                                        <h5 class="font-bold text-purple-900 mb-2">
+                                            Cas ${idx + 1}: ${c.title}
+                                        </h5>
+                                        <p class="text-sm text-gray-700 mb-4">${c.presentation}</p>
+                                        ${c.questions && c.questions.map((sq, sqIdx) => `
+                                            <div class="ml-4 mb-3 p-3 border-2 ${sq.correct ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} rounded">
+                                                <div class="flex items-center justify-between mb-2">
+                                                    <span class="text-sm font-semibold">Question ${sqIdx + 1}</span>
+                                                    <span class="text-xl">${sq.correct ? '✅' : '❌'}</span>
+                                                </div>
+                                                <p class="text-sm mb-2">${sq.question}</p>
+                                                <p class="text-xs">
+                                                    <strong>Votre réponse:</strong> ${sq.user_answer || 'Non répondu'}
+                                                </p>
+                                                ${!sq.correct ? `
+                                                    <p class="text-xs">
+                                                        <strong class="text-green-700">Réponse correcte:</strong> ${sq.correct_answer}
+                                                    </p>
+                                                ` : ''}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+
+                <!-- Recommendations -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-lightbulb mr-2 text-yellow-600"></i>
+                        Recommandations
+                    </h3>
+                    <div class="space-y-3 text-gray-700">
+                        ${getRecommendations(results)}
+                    </div>
+                </div>
+            `;
+
+            // Draw chart
+            drawPerformanceChart(results);
+        }
+
+        function drawPerformanceChart(results) {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['QCM', 'Cas Cliniques', 'T-MCQ Global'],
+                    datasets: [{
+                        label: 'Score (%)',
+                        data: [
+                            results.qcm_score || 0,
+                            results.case_score || 0,
+                            results.tmcq_score || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(168, 85, 247, 0.8)',
+                            'rgba(34, 197, 94, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(59, 130, 246)',
+                            'rgb(168, 85, 247)',
+                            'rgb(34, 197, 94)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'apte': '<span class="px-6 py-2 bg-green-100 text-green-800 rounded-full text-lg font-bold">✓ APTE</span>',
+                'supervision_requise': '<span class="px-6 py-2 bg-yellow-100 text-yellow-800 rounded-full text-lg font-bold">⚠ SUPERVISION REQUISE</span>',
+                'formation_requise': '<span class="px-6 py-2 bg-red-100 text-red-800 rounded-full text-lg font-bold">✗ FORMATION REQUISE</span>'
+            };
+            return badges[status] || '<span class="px-6 py-2 bg-gray-100 text-gray-800 rounded-full text-lg">N/A</span>';
+        }
+
+        function getStatusMessage(status) {
+            const messages = {
+                'apte': 'Félicitations ! Vous avez démontré une excellente maîtrise des connaissances médicales.',
+                'supervision_requise': 'Votre niveau est satisfaisant mais une supervision est recommandée pour certains domaines.',
+                'formation_requise': 'Une formation complémentaire est nécessaire avant de pouvoir exercer en autonomie.'
+            };
+            return messages[status] || 'Évaluation en cours d\'analyse.';
+        }
+
+        function getRecommendations(results) {
+            const recommendations = [];
+
+            if (results.tmcq_score >= 75) {
+                recommendations.push('<li class="flex items-start"><i class="fas fa-check-circle text-green-600 mt-1 mr-2"></i><span>Excellente performance globale. Continuez à vous former régulièrement.</span></li>');
+            } else if (results.tmcq_score >= 60) {
+                recommendations.push('<li class="flex items-start"><i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-2"></i><span>Revoyez les thèmes où vous avez eu des difficultés.</span></li>');
+                recommendations.push('<li class="flex items-start"><i class="fas fa-book text-blue-600 mt-1 mr-2"></i><span>Consultez les guidelines OMS/WHO pour renforcer vos connaissances.</span></li>');
+            } else {
+                recommendations.push('<li class="flex items-start"><i class="fas fa-graduation-cap text-red-600 mt-1 mr-2"></i><span>Formation complémentaire fortement recommandée.</span></li>');
+                recommendations.push('<li class="flex items-start"><i class="fas fa-users text-purple-600 mt-1 mr-2"></i><span>Supervision par un médecin senior requise.</span></li>');
+            }
+
+            if (results.qcm_score < 70) {
+                recommendations.push('<li class="flex items-start"><i class="fas fa-lightbulb text-orange-600 mt-1 mr-2"></i><span>Renforcez vos connaissances théoriques en QCM.</span></li>');
+            }
+
+            if (results.case_score < 70) {
+                recommendations.push('<li class="flex items-start"><i class="fas fa-stethoscope text-pink-600 mt-1 mr-2"></i><span>Pratiquez davantage l\'analyse de cas cliniques.</span></li>');
+            }
+
+            return '<ul class="space-y-2">' + recommendations.join('') + '</ul>';
+        }
+
+        // Initialize
+        loadResults();
+    </script>
+</body>
+</html>

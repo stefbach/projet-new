@@ -1307,14 +1307,14 @@
                 }
                 
                 listDiv.innerHTML = data.qcms.map(qcm => `
-                    <label class="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer">
+                    <label class="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer border-b border-gray-100 last:border-0">
                         <input type="checkbox" value="${qcm.id}" onchange="updateSelectedQCM(this)" class="mt-1 mr-3">
                         <div class="flex-1">
-                            <div class="font-semibold text-gray-900">${qcm.theme || qcm.topic}</div>
-                            <div class="text-sm text-gray-600">${qcm.question.substring(0, 100)}...</div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                <span class="mr-3">${qcm.difficulty || 'N/A'}</span>
-                                <span>${qcm.source}</span>
+                            <div class="font-semibold text-gray-900">${qcm.topic || qcm.theme}</div>
+                            <div class="text-sm text-gray-600 mt-1">${qcm.question.substring(0, 100)}${qcm.question.length > 100 ? '...' : ''}</div>
+                            <div class="text-xs text-gray-500 mt-2 flex items-center space-x-3">
+                                <span><i class="fas fa-tag mr-1 text-green-400"></i>${qcm.difficulty || 'N/A'}</span>
+                                <span><i class="fas fa-book mr-1 text-green-400"></i>${qcm.source || 'OMS'}</span>
                             </div>
                         </div>
                     </label>
@@ -1337,14 +1337,14 @@
                 }
                 
                 listDiv.innerHTML = data.cases.map(clinicalCase => `
-                    <label class="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer">
+                    <label class="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer border-b border-gray-100 last:border-0">
                         <input type="checkbox" value="${clinicalCase.id}" onchange="updateSelectedCases(this)" class="mt-1 mr-3">
                         <div class="flex-1">
                             <div class="font-semibold text-gray-900">${clinicalCase.title || clinicalCase.specialty}</div>
-                            <div class="text-sm text-gray-600">${clinicalCase.presentation.substring(0, 100)}...</div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                <span class="mr-3">${clinicalCase.specialty}</span>
-                                <span>${clinicalCase.complexity || 'N/A'}</span>
+                            <div class="text-sm text-gray-600 mt-1">${(clinicalCase.presentation || 'Cas clinique médical').substring(0, 100)}${(clinicalCase.presentation || '').length > 100 ? '...' : ''}</div>
+                            <div class="text-xs text-gray-500 mt-2 flex items-center space-x-3">
+                                <span><i class="fas fa-hospital mr-1 text-purple-400"></i>${clinicalCase.specialty}</span>
+                                <span><i class="fas fa-layer-group mr-1 text-purple-400"></i>${clinicalCase.complexity || 'N/A'}</span>
                             </div>
                         </div>
                     </label>

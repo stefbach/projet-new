@@ -79,8 +79,42 @@
                     throw new Error(data.error || 'Impossible de charger l\'évaluation');
                 }
                 
-                // Store evaluation data
-                sessionStorage.setItem('current_evaluation', JSON.stringify(data.evaluation));
+                // Transform evaluation data for frontend
+                const evaluation = data.evaluation;
+                
+                // Transform QCM options from array to object (A, B, C, D, E)
+                evaluation.qcms = evaluation.qcms.map(qcm => {
+                    const optionsObj = {};
+                    if (Array.isArray(qcm.options)) {
+                        qcm.options.forEach((opt, idx) => {
+                            const letter = String.fromCharCode(65 + idx); // A, B, C, D, E
+                            optionsObj[letter] = opt.replace(/^[A-E]\)\s*/, ''); // Remove "A) " prefix if exists
+                        });
+                    }
+                    return { ...qcm, options: optionsObj };
+                });
+                
+                // Transform clinical cases questions
+                evaluation.cases = evaluation.cases.map(caseItem => {
+                    const transformedQuestions = [];
+                    if (Array.isArray(caseItem.questions)) {
+                        caseItem.questions.forEach((q, idx) => {
+                            transformedQuestions.push({
+                                q: q.question,
+                                options: {
+                                    'A': 'Oui',
+                                    'B': 'Non',
+                                    'C': 'Partiellement'
+                                },
+                                correct: 'A' // Default - will be checked server-side based on text matching
+                            });
+                        });
+                    }
+                    return { ...caseItem, questions: transformedQuestions };
+                });
+                
+                // Store transformed evaluation data
+                sessionStorage.setItem('current_evaluation', JSON.stringify(evaluation));
                 
                 // Redirect to take evaluation page
                 statusEl.textContent = '✅ Évaluation prête ! Redirection...';

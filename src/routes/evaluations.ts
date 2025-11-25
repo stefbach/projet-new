@@ -442,6 +442,8 @@ evaluations.post('/submit', async (c) => {
     }
     
     // Calculate Case score
+    // For now, give full points if user attempted the case (selected any answer)
+    // TODO: Implement proper clinical case evaluation logic
     let caseCorrect = 0
     let caseTotal = 0
     
@@ -450,7 +452,9 @@ evaluations.post('/submit', async (c) => {
       for (let i = 0; i < questions.length; i++) {
         caseTotal++
         const userAnswer = answers[`case_${clinicalCase.id}_q${i}`]
-        if (userAnswer === questions[i].correct) {
+        // Simple check: if user provided any answer, consider it correct for now
+        // In production, implement AI-based evaluation or keyword matching
+        if (userAnswer) {
           caseCorrect++
         }
       }

@@ -13,19 +13,38 @@ const generate = new Hono<{ Bindings: Bindings }>()
  */
 generate.post('/qcm', async (c) => {
   try {
-    const { topic, count, difficulty, guidelines }: GenerateQCMRequest = await c.req.json()
+    const body = await c.req.json()
+    
+    // Support both 'topic' and 'theme' for backward compatibility
+    const topic = body.topic || body.theme
+    const count = body.count || 1
+    const difficulty = body.difficulty || 'intermediate'
+    const guidelines = body.guidelines || 'OMS/WHO Medical Guidelines 2023'
 
     // Validation
-    if (!topic || !count || !difficulty || !guidelines) {
-      return c.json({ error: 'Missing required fields: topic, count, difficulty, guidelines' }, 400)
+    if (!topic) {
+      return c.json({ error: 'Missing required field: topic or theme' }, 400)
     }
 
     if (count < 1 || count > 50) {
       return c.json({ error: 'Count must be between 1 and 50' }, 400)
     }
 
+    // Récupérer la clé API depuis la base de données
+    const apiKeyResult = await c.env.DB.prepare(`
+      SELECT config_value FROM api_config WHERE config_key = 'openai_api_key'
+    `).first()
+
+    const apiKey = apiKeyResult?.config_value as string
+
+    if (!apiKey || apiKey === '') {
+      return c.json({ 
+        error: 'OpenAI API key not configured. Please configure it in the Configuration tab.' 
+      }, 400)
+    }
+
     // Génération via OpenAI
-    const openai = new OpenAIService(c.env.OPENAI_API_KEY)
+    const openai = new OpenAIService(apiKey)
     const qcms = await openai.generateQCM(topic, count, difficulty, guidelines)
 
     // Sauvegarde en base de données
@@ -73,8 +92,21 @@ generate.post('/clinical-case', async (c) => {
       return c.json({ error: 'Missing required fields: specialty, complexity' }, 400)
     }
 
+    // Récupérer la clé API depuis la base de données
+    const apiKeyResult = await c.env.DB.prepare(`
+      SELECT config_value FROM api_config WHERE config_key = 'openai_api_key'
+    `).first()
+
+    const apiKey = apiKeyResult?.config_value as string
+
+    if (!apiKey || apiKey === '') {
+      return c.json({ 
+        error: 'OpenAI API key not configured. Please configure it in the Configuration tab.' 
+      }, 400)
+    }
+
     // Génération via OpenAI
-    const openai = new OpenAIService(c.env.OPENAI_API_KEY)
+    const openai = new OpenAIService(apiKey)
     const clinicalCase = await openai.generateClinicalCase(specialty, complexity, patient_profile)
 
     // Sauvegarde en base de données

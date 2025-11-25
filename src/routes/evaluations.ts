@@ -402,7 +402,7 @@ evaluations.post('/start', async (c) => {
  */
 evaluations.post('/submit', async (c) => {
   try {
-    const { evaluation_id, answers, duration_seconds } = await c.req.json()
+    const { template_id, answers, duration_seconds } = await c.req.json()
     const authHeader = c.req.header('Authorization')
     
     if (!authHeader) {
@@ -413,20 +413,92 @@ evaluations.post('/submit', async (c) => {
     const payload = JSON.parse(atob(token.split('.')[1]))
     const doctorId = payload.doctor_id
     
-    // For now, return mock results
-    // TODO: Calculate actual scores based on answers
-    const mockScore = 75 + Math.random() * 20
+    // Get template QCMs and cases
+    const qcms = await c.env.DB.prepare(`
+      SELECT gq.id, gq.correct_answer
+      FROM evaluation_template_qcm etq
+      JOIN generated_qcm gq ON etq.qcm_id = gq.id
+      WHERE etq.template_id = ?
+      ORDER BY etq.order_index
+    `).bind(template_id).all()
+    
+    const cases = await c.env.DB.prepare(`
+      SELECT cc.id, cc.questions
+      FROM evaluation_template_cases etc
+      JOIN clinical_cases cc ON etc.case_id = cc.id
+      WHERE etc.template_id = ?
+      ORDER BY etc.order_index
+    `).bind(template_id).all()
+    
+    // Calculate QCM score
+    let qcmCorrect = 0
+    let qcmTotal = qcms.results.length
+    
+    for (const qcm of qcms.results) {
+      const userAnswer = answers[`qcm_${qcm.id}`]
+      if (userAnswer === qcm.correct_answer) {
+        qcmCorrect++
+      }
+    }
+    
+    // Calculate Case score
+    let caseCorrect = 0
+    let caseTotal = 0
+    
+    for (const clinicalCase of cases.results) {
+      const questions = JSON.parse(clinicalCase.questions as string)
+      for (let i = 0; i < questions.length; i++) {
+        caseTotal++
+        const userAnswer = answers[`case_${clinicalCase.id}_q${i}`]
+        if (userAnswer === questions[i].correct) {
+          caseCorrect++
+        }
+      }
+    }
+    
+    // Calculate scores (%)
+    const qcmScore = qcmTotal > 0 ? Math.round((qcmCorrect / qcmTotal) * 100) : 0
+    const caseScore = caseTotal > 0 ? Math.round((caseCorrect / caseTotal) * 100) : 0
+    
+    // Calculate T-MCQ (weighted average: QCM 40%, Cases 60%)
+    const tmcqScore = Math.round((qcmScore * 0.4) + (caseScore * 0.6))
+    
+    // Determine status
+    let status = 'formation_requise'
+    if (tmcqScore >= 75) status = 'apte'
+    else if (tmcqScore >= 60) status = 'supervision_requise'
+    
+    // Save to database
+    const resultId = `eval-result-${Date.now()}`
+    
+    await c.env.DB.prepare(`
+      INSERT INTO doctors_evaluations (id, doctor_id, qcm_score, clinical_cases_score, tmcq_total, status, evaluation_date, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    `).bind(resultId, doctorId, qcmScore, caseScore, tmcqScore, status).run()
+    
+    // Update doctor's latest scores
+    await c.env.DB.prepare(`
+      UPDATE doctors 
+      SET tmcq_total = ?,
+          evaluation_status = ?,
+          last_evaluation_date = datetime('now')
+      WHERE id = ?
+    `).bind(tmcqScore, status, doctorId).run()
     
     return c.json({
       success: true,
       result: {
-        id: `result-${Date.now()}`,
-        evaluation_id,
+        id: resultId,
+        template_id,
         doctor_id: doctorId,
-        tmcq_score: mockScore,
-        qcm_score: 80,
-        case_score: 70,
-        status: mockScore >= 75 ? 'apte' : mockScore >= 60 ? 'supervision_requise' : 'formation_requise',
+        tmcq_score: tmcqScore,
+        qcm_score: qcmScore,
+        case_score: caseScore,
+        qcm_correct: qcmCorrect,
+        qcm_total: qcmTotal,
+        case_correct: caseCorrect,
+        case_total: caseTotal,
+        status: status,
         created_at: new Date().toISOString()
       }
     })
@@ -444,24 +516,29 @@ evaluations.get('/results/:id', async (c) => {
   try {
     const resultId = c.req.param('id')
     
-    // For now, return mock results
-    // TODO: Retrieve actual results from database
-    const mockScore = 75 + Math.random() * 20
+    // Get evaluation result
+    const result = await c.env.DB.prepare(`
+      SELECT * FROM doctors_evaluations WHERE id = ?
+    `).bind(resultId).first()
+    
+    if (!result) {
+      return c.json({ error: 'Results not found' }, 404)
+    }
     
     return c.json({
       success: true,
       results: {
-        id: resultId,
-        evaluation_name: 'Évaluation Médicale Générale',
-        tmcq_score: mockScore,
-        qcm_score: 80,
-        case_score: 70,
-        qcm_correct: 8,
-        qcm_total: 10,
-        case_correct: 2,
-        case_total: 3,
-        status: mockScore >= 75 ? 'apte' : mockScore >= 60 ? 'supervision_requise' : 'formation_requise',
-        created_at: new Date().toISOString(),
+        id: result.id,
+        evaluation_name: 'Évaluation Médicale',
+        tmcq_score: result.tmcq_total,
+        qcm_score: result.qcm_score,
+        case_score: result.clinical_cases_score,
+        qcm_correct: 0,
+        qcm_total: 0,
+        case_correct: 0,
+        case_total: 0,
+        status: result.status,
+        created_at: result.created_at,
         details: {
           qcms: [],
           cases: []

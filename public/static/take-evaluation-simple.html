@@ -216,13 +216,46 @@
             }
         }
 
-        function submit() {
+        async function submit() {
             if (!confirm('⚠️ Soumettre l\'évaluation ? Vous ne pourrez plus modifier.')) return;
             
             clearInterval(timerInterval);
             
-            alert('✅ Évaluation soumise ! (Score fictif pour démo)');
-            window.location.href = '/static/doctor-dashboard.html';
+            const token = localStorage.getItem('doctor_token');
+            if (!token) {
+                alert('❌ Token manquant. Reconnectez-vous.');
+                window.location.href = '/static/login.html';
+                return;
+            }
+            
+            try {
+                const duration = Math.floor((Date.now() - startTime) / 1000);
+                
+                const response = await fetch('/api/evaluations/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        template_id: evalData.template_id,
+                        answers: answers,
+                        duration_seconds: duration
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    sessionStorage.setItem('evaluation_result', JSON.stringify(data.result));
+                    alert(`✅ Évaluation soumise !\n\nScore T-MCQ: ${data.result.tmcq_score}%\nQCM: ${data.result.qcm_score}% (${data.result.qcm_correct}/${data.result.qcm_total})\nCas: ${data.result.case_score}% (${data.result.case_correct}/${data.result.case_total})\nStatut: ${data.result.status.toUpperCase()}`);
+                    window.location.href = '/static/evaluation-results.html?id=' + data.result.id;
+                } else {
+                    alert('❌ Erreur: ' + (data.error || 'Impossible de soumettre'));
+                }
+            } catch (error) {
+                alert('❌ Erreur réseau: ' + error.message);
+            }
         }
 
         function quitEval() {

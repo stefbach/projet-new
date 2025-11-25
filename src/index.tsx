@@ -40,8 +40,13 @@ app.get('/api/health', (c) => {
   })
 })
 
-// Dashboard HTML
+// Redirect to homepage
 app.get('/', (c) => {
+  return c.redirect('/static/index.html')
+})
+
+// Admin Dashboard HTML (accessible via /admin)
+app.get('/admin', (c) => {
   return c.html(`
 <!DOCTYPE html>
 <html lang="fr">

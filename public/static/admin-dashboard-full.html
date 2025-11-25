@@ -335,11 +335,7 @@
 
             <form onsubmit="generateQCM(event)">
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de QCM à générer *</label>
-                        <input type="number" id="qcm-count" required min="1" max="50" value="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <p class="text-xs text-gray-500 mt-1">Entre 1 et 50 QCM (recommandé: 10-20 pour un batch rapide)</p>
-                    </div>
+    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Thème médical</label>
                         <select id="qcm-theme" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
@@ -370,7 +366,7 @@
                         <p class="text-xs text-blue-800">
                             <i class="fas fa-info-circle mr-1"></i>
                             <strong>Durée estimée :</strong> 
-                            <span id="qcm-time-estimate">~2-5 minutes pour 10 QCM</span>
+                            ~30-60 secondes par QCM
                         </p>
                     </div>
                 </div>
@@ -399,11 +395,7 @@
 
             <form onsubmit="generateClinicalCase(event)">
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de cas à générer *</label>
-                        <input type="number" id="case-count" required min="1" max="30" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                        <p class="text-xs text-gray-500 mt-1">Entre 1 et 30 cas (recommandé: 5-10 pour un batch rapide)</p>
-                    </div>
+    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Spécialité</label>
                         <select id="case-specialty" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
@@ -432,7 +424,7 @@
                         <p class="text-xs text-purple-800">
                             <i class="fas fa-info-circle mr-1"></i>
                             <strong>Durée estimée :</strong> 
-                            <span id="case-time-estimate">~3-7 minutes pour 5 cas</span>
+                            ~45-90 secondes par cas
                         </p>
                     </div>
                 </div>
@@ -1100,59 +1092,28 @@
         }
 
         // Update time estimate when QCM count changes
-        document.addEventListener('DOMContentLoaded', () => {
-            const qcmCountInput = document.getElementById('qcm-count');
-            if (qcmCountInput) {
-                qcmCountInput.addEventListener('input', (e) => {
-                    const count = parseInt(e.target.value) || 10;
-                    const minMinutes = Math.ceil(count * 0.2);
-                    const maxMinutes = Math.ceil(count * 0.5);
-                    document.getElementById('qcm-time-estimate').textContent = 
-                        `~${minMinutes}-${maxMinutes} minutes pour ${count} QCM`;
-                });
-            }
-            
-            const caseCountInput = document.getElementById('case-count');
-            if (caseCountInput) {
-                caseCountInput.addEventListener('input', (e) => {
-                    const count = parseInt(e.target.value) || 5;
-                    const minMinutes = Math.ceil(count * 0.5);
-                    const maxMinutes = Math.ceil(count * 1.5);
-                    document.getElementById('case-time-estimate').textContent = 
-                        `~${minMinutes}-${maxMinutes} minutes pour ${count} cas`;
-                });
-            }
-        });
+        // Plus besoin de calculer dynamiquement (génération UN par UN uniquement)
 
         async function generateQCM(event) {
             event.preventDefault();
             
-            const count = parseInt(document.getElementById('qcm-count').value);
+            const count = 1;  // UN SEUL QCM à la fois
             const theme = document.getElementById('qcm-theme').value;
             const difficulty = document.getElementById('qcm-difficulty').value;
             
-            if (count < 1 || count > 50) {
-                alert('❌ Le nombre de QCM doit être entre 1 et 50');
-                return;
-            }
-            
             hideGenerateQCMModal();
             
-            // Show loading with progress
+            // Show loading
             const qcmListDiv = document.getElementById('qcm-list');
-            const estimatedTime = Math.ceil(count * 0.35);
             qcmListDiv.innerHTML = `
                 <div class="text-center py-12">
                     <i class="fas fa-spinner fa-spin text-5xl text-blue-600 mb-4"></i>
-                    <p class="text-xl font-semibold text-gray-900 mb-2">Génération en cours...</p>
-                    <p class="text-gray-600 mb-4">Génération de ${count} QCM sur le thème "${theme}"</p>
+                    <p class="text-xl font-semibold text-gray-900 mb-2">Génération d'UN QCM...</p>
+                    <p class="text-gray-600 mb-4">Thème: "${theme}" | Difficulté: ${difficulty}</p>
                     <div class="bg-blue-50 rounded-lg p-4 max-w-md mx-auto">
                         <p class="text-sm text-blue-800">
                             <i class="fas fa-clock mr-2"></i>
-                            Temps estimé: ~${estimatedTime} minutes
-                        </p>
-                        <p class="text-xs text-blue-600 mt-2">
-                            Ne fermez pas cette page. La génération se fait en arrière-plan.
+                            Temps estimé: 30-60 secondes
                         </p>
                     </div>
                 </div>
@@ -1172,7 +1133,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert(`✅ ${data.count || count} QCM générés avec succès !`);
+                    alert('✅ 1 QCM généré avec succès !');
                     loadContent();
                     loadDashboard();
                 } else {
@@ -1199,32 +1160,23 @@
         async function generateClinicalCase(event) {
             event.preventDefault();
             
-            const count = parseInt(document.getElementById('case-count').value);
+            const count = 1;  // UN SEUL cas à la fois
             const specialty = document.getElementById('case-specialty').value;
             const complexity = document.getElementById('case-complexity').value;
             
-            if (count < 1 || count > 30) {
-                alert('❌ Le nombre de cas doit être entre 1 et 30');
-                return;
-            }
-            
             hideGenerateCaseModal();
             
-            // Show loading with progress
+            // Show loading
             const caseListDiv = document.getElementById('case-list');
-            const estimatedTime = Math.ceil(count * 1);
             caseListDiv.innerHTML = `
                 <div class="text-center py-12">
                     <i class="fas fa-spinner fa-spin text-5xl text-purple-600 mb-4"></i>
-                    <p class="text-xl font-semibold text-gray-900 mb-2">Génération en cours...</p>
-                    <p class="text-gray-600 mb-4">Génération de ${count} cas cliniques en "${specialty}"</p>
+                    <p class="text-xl font-semibold text-gray-900 mb-2">Génération d'UN cas clinique...</p>
+                    <p class="text-gray-600 mb-4">Spécialité: "${specialty}" | Complexité: ${complexity}</p>
                     <div class="bg-purple-50 rounded-lg p-4 max-w-md mx-auto">
                         <p class="text-sm text-purple-800">
                             <i class="fas fa-clock mr-2"></i>
-                            Temps estimé: ~${estimatedTime} minutes
-                        </p>
-                        <p class="text-xs text-purple-600 mt-2">
-                            ⚠️ Ne fermez pas cette page. La génération se fait en une seule requête.
+                            Temps estimé: 45-90 secondes
                         </p>
                     </div>
                 </div>
@@ -1245,7 +1197,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert(`✅ ${data.count || count} cas cliniques générés avec succès !`);
+                    alert('✅ 1 cas clinique généré avec succès !');
                     loadContent();
                     loadDashboard();
                 } else {

@@ -45,6 +45,206 @@ app.get('/', (c) => {
   return c.redirect('/static/index.html')
 })
 
+// Admin Dashboard DIRECT (sans JavaScript - tout chargé côté serveur)
+app.get('/admin-direct', async (c) => {
+  try {
+    // Récupérer les stats (version simplifiée sans status qui n'existe pas)
+    const stats = await c.env.DB.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM doctors) as total_doctors,
+        (SELECT COUNT(*) FROM generated_qcm) as total_qcm,
+        (SELECT COUNT(*) FROM clinical_cases) as total_cases,
+        (SELECT COUNT(*) FROM alerts_doctors) as unresolved_alerts
+    `).first()
+
+    // Récupérer tous les médecins
+    const doctors = await c.env.DB.prepare(`
+      SELECT 
+        d.id,
+        d.email,
+        d.name,
+        d.specialty,
+        d.license_number,
+        d.created_at,
+        de.tmcq_total,
+        de.status as evaluation_status,
+        de.evaluation_date
+      FROM doctors d
+      LEFT JOIN doctors_evaluations de ON d.id = de.doctor_id
+      ORDER BY d.created_at DESC
+    `).all()
+
+    return c.html(`
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIBOK - Admin Direct</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-6 mb-8">
+                <h1 class="text-3xl font-bold text-white">
+                    <i class="fas fa-hospital-user mr-3"></i>
+                    TIBOK Medical Evaluation - Admin Direct
+                </h1>
+                <p class="text-blue-100 mt-2">✅ Tableau de bord administrateur (sans JavaScript)</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Total Médecins</p>
+                            <p class="text-3xl font-bold text-blue-600">${stats?.total_doctors || 0}</p>
+                        </div>
+                        <i class="fas fa-user-md text-4xl text-blue-200"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">QCM Disponibles</p>
+                            <p class="text-3xl font-bold text-green-600">${stats?.total_qcm || 0}</p>
+                        </div>
+                        <i class="fas fa-question-circle text-4xl text-green-200"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Cas Cliniques</p>
+                            <p class="text-3xl font-bold text-purple-600">${stats?.total_cases || 0}</p>
+                        </div>
+                        <i class="fas fa-file-medical text-4xl text-purple-200"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Alertes Non Résolues</p>
+                            <p class="text-3xl font-bold text-red-600">${stats?.unresolved_alerts || 0}</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-200"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doctors Table -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="bg-blue-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white">
+                        <i class="fas fa-users mr-2"></i>
+                        Liste des Médecins (${doctors.results.length} total)
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spécialité</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° Enregistrement</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score TMCQ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${doctors.results.map(doc => `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-user-circle text-2xl text-blue-400 mr-3"></i>
+                                        <div class="font-medium text-gray-900">${doc.name}</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${doc.email}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${doc.specialty || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${doc.license_number || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="text-lg font-bold ${doc.tmcq_total >= 75 ? 'text-green-600' : 'text-orange-600'}">
+                                        ${doc.tmcq_total ? doc.tmcq_total.toFixed(1) : 'N/A'}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    ${doc.evaluation_status ? `
+                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            ${doc.evaluation_status === 'apte' ? 'bg-green-100 text-green-800' : 
+                                              doc.evaluation_status === 'supervision' ? 'bg-yellow-100 text-yellow-800' : 
+                                              'bg-red-100 text-red-800'}">
+                                            ${doc.evaluation_status === 'apte' ? '✓ Apte' : 
+                                              doc.evaluation_status === 'supervision' ? '⚠ Supervision' : 
+                                              '✗ Formation requise'}
+                                        </span>
+                                    ` : '<span class="text-gray-400">Non évalué</span>'}
+                                </td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <a href="/api/health" target="_blank" class="bg-green-500 hover:bg-green-600 text-white rounded-lg p-6 text-center shadow-md">
+                    <i class="fas fa-heartbeat text-3xl mb-2"></i>
+                    <p class="font-semibold">Tester API Health</p>
+                </a>
+                <a href="/api/admin/stats" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-6 text-center shadow-md">
+                    <i class="fas fa-chart-bar text-3xl mb-2"></i>
+                    <p class="font-semibold">Stats JSON</p>
+                </a>
+                <a href="/api/generate/qcm/random?count=5" target="_blank" class="bg-purple-500 hover:bg-purple-600 text-white rounded-lg p-6 text-center shadow-md">
+                    <i class="fas fa-random text-3xl mb-2"></i>
+                    <p class="font-semibold">5 QCM Aléatoires</p>
+                </a>
+            </div>
+
+            <!-- Footer -->
+            <div class="mt-8 text-center text-gray-500 text-sm">
+                <p>TIBOK Medical Evaluation System v1.0.0</p>
+                <p class="mt-1">Dernière mise à jour: ${new Date().toLocaleString('fr-FR')}</p>
+                <p class="mt-2">
+                    <a href="/admin" class="text-blue-600 hover:underline">Version avec JavaScript →</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `)
+  } catch (error: any) {
+    return c.html(`
+      <html>
+        <head>
+          <title>Erreur TIBOK</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-red-50 p-8">
+          <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+            <h1 class="text-2xl font-bold text-red-600 mb-4">❌ Erreur Serveur</h1>
+            <pre class="bg-gray-100 p-4 rounded text-sm overflow-auto">${error.message}</pre>
+            <div class="mt-4">
+              <a href="/" class="text-blue-600 hover:underline">← Retour à l'accueil</a>
+            </div>
+          </div>
+        </body>
+      </html>
+    `)
+  }
+})
+
 // Admin Dashboard HTML (accessible via /admin)
 app.get('/admin', (c) => {
   return c.html(`

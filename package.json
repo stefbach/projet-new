@@ -1,20 +1,30 @@
 {
-  "name": "webapp",
+  "name": "tibok-medical-evaluation",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:sandbox": "wrangler pages dev dist --d1=tibok-medical-db --local --ip 0.0.0.0 --port 3000",
     "build": "vite build",
-    "preview": "wrangler pages dev",
-    "deploy": "npm run build && wrangler pages deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "preview": "wrangler pages dev dist --d1=tibok-medical-db --local",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name tibok-medical-evaluation",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:create": "wrangler d1 create tibok-medical-db",
+    "db:migrate:local": "wrangler d1 migrations apply tibok-medical-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply tibok-medical-db",
+    "db:console:local": "wrangler d1 execute tibok-medical-db --local",
+    "db:console:prod": "wrangler d1 execute tibok-medical-db",
+    "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
+    "git:commit": "git add . && git commit -m"
   },
   "dependencies": {
     "hono": "^4.10.6"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250705.0",
     "@hono/vite-build": "^1.2.0",
     "@hono/vite-dev-server": "^0.18.2",
     "vite": "^6.3.5",
-    "wrangler": "^4.4.0"
+    "wrangler": "^4.4.0",
+    "typescript": "^5.7.3"
   }
 }

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QCM - Détail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="mb-6">
+            <a href="/static/admin-dashboard-full.html" class="text-blue-600 hover:text-blue-800">
+                <i class="fas fa-arrow-left mr-2"></i>Retour au Dashboard
+            </a>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div id="qcm-content" class="space-y-6">
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+                    <p class="mt-4 text-gray-600">Chargement du QCM...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const qcmId = urlParams.get('id');
+
+        async function loadQCM() {
+            try {
+                const response = await fetch(`${API_BASE}/generate/qcm/${qcmId}`);
+                const data = await response.json();
+                
+                if (data.success && data.qcm) {
+                    displayQCM(data.qcm);
+                } else {
+                    document.getElementById('qcm-content').innerHTML = `
+                        <div class="text-center py-12">
+                            <i class="fas fa-exclamation-circle text-4xl text-red-600"></i>
+                            <p class="mt-4 text-gray-600">QCM non trouvé</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load QCM:', error);
+            }
+        }
+
+        function displayQCM(qcm) {
+            const options = typeof qcm.options === 'string' ? JSON.parse(qcm.options) : qcm.options;
+            
+            document.getElementById('qcm-content').innerHTML = `
+                <div class="border-b pb-4 mb-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">${qcm.theme || qcm.topic}</span>
+                            <span class="ml-2 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">${qcm.difficulty || 'N/A'}</span>
+                        </div>
+                        <button onclick="window.print()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                            <i class="fas fa-print mr-2"></i>Imprimer
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Question</h2>
+                    <div class="bg-blue-50 border-l-4 border-blue-600 p-6 rounded">
+                        <p class="text-lg text-gray-800">${qcm.question}</p>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Options de réponse</h3>
+                    <div class="space-y-3">
+                        ${Object.entries(options).map(([letter, text]) => `
+                            <div class="flex items-start p-4 rounded-lg border-2 ${letter === qcm.correct_answer ? 'border-green-500 bg-green-50' : 'border-gray-200'}">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${letter === qcm.correct_answer ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'}">
+                                    ${letter}
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <p class="text-gray-800">${text}</p>
+                                    ${letter === qcm.correct_answer ? '<p class="mt-2 text-sm font-semibold text-green-700"><i class="fas fa-check-circle mr-1"></i>Réponse correcte</p>' : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Justification
+                    </h3>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded">
+                        <p class="text-gray-800 leading-relaxed">${qcm.justification}</p>
+                    </div>
+                </div>
+
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">Informations complémentaires</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-4 rounded">
+                            <p class="text-sm text-gray-600">Source</p>
+                            <p class="font-semibold text-gray-900">${qcm.source}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded">
+                            <p class="text-sm text-gray-600">Catégorie</p>
+                            <p class="font-semibold text-gray-900">${qcm.category || 'Non spécifiée'}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded">
+                            <p class="text-sm text-gray-600">Date de création</p>
+                            <p class="font-semibold text-gray-900">${new Date(qcm.created_at).toLocaleDateString('fr-FR')}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded">
+                            <p class="text-sm text-gray-600">Utilisé</p>
+                            <p class="font-semibold text-gray-900">${qcm.used_count || 0} fois</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (qcmId) {
+            loadQCM();
+        } else {
+            document.getElementById('qcm-content').innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-circle text-4xl text-red-600"></i>
+                    <p class="mt-4 text-gray-600">Aucun ID de QCM fourni</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

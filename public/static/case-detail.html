@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cas Clinique - Détail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="mb-6">
+            <a href="/static/admin-dashboard-full.html" class="text-blue-600 hover:text-blue-800">
+                <i class="fas fa-arrow-left mr-2"></i>Retour au Dashboard
+            </a>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div id="case-content" class="space-y-6">
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-purple-600"></i>
+                    <p class="mt-4 text-gray-600">Chargement du cas clinique...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const caseId = urlParams.get('id');
+
+        async function loadCase() {
+            try {
+                const response = await fetch(`${API_BASE}/generate/clinical-case/${caseId}`);
+                const data = await response.json();
+                
+                if (data.success && data.case) {
+                    displayCase(data.case);
+                } else {
+                    document.getElementById('case-content').innerHTML = `
+                        <div class="text-center py-12">
+                            <i class="fas fa-exclamation-circle text-4xl text-red-600"></i>
+                            <p class="mt-4 text-gray-600">Cas clinique non trouvé</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load case:', error);
+            }
+        }
+
+        function displayCase(clinicalCase) {
+            const patientProfile = typeof clinicalCase.patient_profile === 'string' ? JSON.parse(clinicalCase.patient_profile) : clinicalCase.patient_profile;
+            const anamnesis = typeof clinicalCase.anamnesis === 'string' ? JSON.parse(clinicalCase.anamnesis) : clinicalCase.anamnesis;
+            const questions = typeof clinicalCase.questions === 'string' ? JSON.parse(clinicalCase.questions) : clinicalCase.questions;
+            const redFlags = typeof clinicalCase.red_flags === 'string' ? JSON.parse(clinicalCase.red_flags) : clinicalCase.red_flags;
+            const prescription = typeof clinicalCase.prescription === 'string' ? JSON.parse(clinicalCase.prescription) : clinicalCase.prescription;
+            
+            document.getElementById('case-content').innerHTML = `
+                <div class="border-b pb-4 mb-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-900 mb-2">${clinicalCase.title}</h1>
+                            <div class="flex space-x-2">
+                                <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">${clinicalCase.specialty}</span>
+                                <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">${clinicalCase.complexity || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <button onclick="window.print()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                            <i class="fas fa-print mr-2"></i>Imprimer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Patient Profile -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-user-circle text-blue-600 mr-2"></i>Profil du Patient
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Âge</p>
+                            <p class="text-xl font-bold text-gray-900">${patientProfile?.age || 'N/A'}</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Sexe</p>
+                            <p class="text-xl font-bold text-gray-900">${patientProfile?.gender || 'N/A'}</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Antécédents</p>
+                            <p class="text-sm font-semibold text-gray-900">${patientProfile?.medical_history || 'Aucun'}</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Allergies</p>
+                            <p class="text-sm font-semibold text-gray-900">${patientProfile?.allergies || 'Aucune'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Présentation -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-file-medical text-green-600 mr-2"></i>Présentation du Cas
+                    </h2>
+                    <div class="bg-green-50 border-l-4 border-green-600 p-6 rounded">
+                        <p class="text-gray-800 leading-relaxed">${clinicalCase.presentation}</p>
+                    </div>
+                </div>
+
+                <!-- Anamnèse -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-notes-medical text-indigo-600 mr-2"></i>Anamnèse
+                    </h2>
+                    <div class="space-y-4">
+                        ${anamnesis && typeof anamnesis === 'object' ? Object.entries(anamnesis).map(([key, value]) => `
+                            <div class="bg-indigo-50 p-4 rounded-lg">
+                                <p class="font-semibold text-indigo-900 mb-1">${key}</p>
+                                <p class="text-gray-800">${value}</p>
+                            </div>
+                        `).join('') : '<p class="text-gray-600">Aucune information d\'anamnèse disponible</p>'}
+                    </div>
+                </div>
+
+                <!-- Red Flags -->
+                ${redFlags && redFlags.length > 0 ? `
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>Red Flags
+                    </h2>
+                    <div class="bg-red-50 border-l-4 border-red-600 p-6 rounded">
+                        <ul class="space-y-2">
+                            ${redFlags.map(flag => `
+                                <li class="flex items-start">
+                                    <i class="fas fa-exclamation-circle text-red-600 mt-1 mr-3"></i>
+                                    <span class="text-gray-800">${flag}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Questions -->
+                ${questions && questions.length > 0 ? `
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-question-circle text-orange-600 mr-2"></i>Questions d'Évaluation
+                    </h2>
+                    <div class="space-y-4">
+                        ${questions.map((q, index) => `
+                            <div class="bg-orange-50 border border-orange-200 p-6 rounded-lg">
+                                <p class="font-semibold text-orange-900 mb-2">Question ${index + 1}</p>
+                                <p class="text-gray-800">${typeof q === 'string' ? q : q.question || q}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Diagnostic -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-stethoscope text-teal-600 mr-2"></i>Diagnostic
+                    </h2>
+                    <div class="bg-teal-50 border-l-4 border-teal-600 p-6 rounded">
+                        <p class="text-lg font-semibold text-gray-800">${clinicalCase.diagnosis}</p>
+                    </div>
+                </div>
+
+                <!-- Prise en charge -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-procedures text-blue-600 mr-2"></i>Prise en Charge
+                    </h2>
+                    <div class="bg-blue-50 border-l-4 border-blue-600 p-6 rounded">
+                        <p class="text-gray-800 leading-relaxed whitespace-pre-line">${clinicalCase.management}</p>
+                    </div>
+                </div>
+
+                <!-- Prescription -->
+                ${prescription && Object.keys(prescription).length > 0 ? `
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-prescription text-pink-600 mr-2"></i>Prescription
+                    </h2>
+                    <div class="bg-pink-50 border-l-4 border-pink-600 p-6 rounded">
+                        ${Object.entries(prescription).map(([key, value]) => `
+                            <div class="mb-3">
+                                <p class="font-semibold text-pink-900">${key}</p>
+                                <p class="text-gray-800">${value}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Source -->
+                <div class="border-t pt-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-50 p-4 rounded">
+                            <p class="text-sm text-gray-600">Source</p>
+                            <p class="font-semibold text-gray-900">${clinicalCase.source}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded">
+                            <p class="text-sm text-gray-600">Date de création</p>
+                            <p class="font-semibold text-gray-900">${new Date(clinicalCase.created_at).toLocaleDateString('fr-FR')}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded">
+                            <p class="text-sm text-gray-600">Utilisé</p>
+                            <p class="font-semibold text-gray-900">${clinicalCase.used_count || 0} fois</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (caseId) {
+            loadCase();
+        } else {
+            document.getElementById('case-content').innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-circle text-4xl text-red-600"></i>
+                    <p class="mt-4 text-gray-600">Aucun ID de cas fourni</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

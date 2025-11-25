@@ -1062,11 +1062,11 @@
         }
 
         function viewQCM(qcmId) {
-            alert('Vue détaillée QCM: ' + qcmId + '\n(Fonctionnalité à venir)');
+            window.open(`/static/qcm-detail.html?id=${qcmId}`, '_blank');
         }
 
         function viewCase(caseId) {
-            alert('Vue détaillée Cas: ' + caseId + '\n(Fonctionnalité à venir)');
+            window.open(`/static/case-detail.html?id=${caseId}`, '_blank');
         }
 
         // Helper Functions

@@ -192,10 +192,11 @@ generate.get('/qcm/random', async (c) => {
 
 /**
  * GET /api/generate/clinical-case/random
- * Récupère un cas clinique aléatoire
+ * Récupère des cas cliniques aléatoires
  */
 generate.get('/clinical-case/random', async (c) => {
   try {
+    const count = parseInt(c.req.query('count') || '5')
     const specialty = c.req.query('specialty')
     const complexity = c.req.query('complexity')
 
@@ -216,12 +217,77 @@ generate.get('/clinical-case/random', async (c) => {
       query += ' WHERE ' + conditions.join(' AND ')
     }
 
-    query += ' ORDER BY RANDOM() LIMIT 1'
+    query += ' ORDER BY RANDOM() LIMIT ?'
+    params.push(count)
 
-    const result = await c.env.DB.prepare(query).bind(...params).first()
+    const result = await c.env.DB.prepare(query).bind(...params).all()
+
+    const cases = result.results.map((row: any) => ({
+      ...row,
+      patient_profile: JSON.parse(row.patient_profile as string),
+      anamnesis: JSON.parse(row.anamnesis as string),
+      questions: JSON.parse(row.questions as string),
+      red_flags: JSON.parse(row.red_flags as string),
+      prescription: JSON.parse(row.prescription as string)
+    }))
+
+    return c.json({
+      success: true,
+      count: cases.length,
+      cases
+    })
+  } catch (error: any) {
+    console.error('Random Clinical Case Error:', error)
+    return c.json({ error: error.message || 'Failed to fetch clinical case' }, 500)
+  }
+})
+
+/**
+ * GET /api/generate/qcm/:id
+ * Récupère un QCM par ID
+ */
+generate.get('/qcm/:id', async (c) => {
+  try {
+    const qcmId = c.req.param('id')
+    
+    const result = await c.env.DB.prepare('SELECT * FROM generated_qcm WHERE id = ?')
+      .bind(qcmId)
+      .first()
 
     if (!result) {
-      return c.json({ error: 'No clinical case found' }, 404)
+      return c.json({ error: 'QCM not found' }, 404)
+    }
+
+    const qcm = {
+      ...result,
+      options: JSON.parse(result.options as string),
+      tags: JSON.parse(result.tags as string)
+    }
+
+    return c.json({
+      success: true,
+      qcm
+    })
+  } catch (error: any) {
+    console.error('Get QCM Error:', error)
+    return c.json({ error: error.message || 'Failed to fetch QCM' }, 500)
+  }
+})
+
+/**
+ * GET /api/generate/clinical-case/:id
+ * Récupère un cas clinique par ID
+ */
+generate.get('/clinical-case/:id', async (c) => {
+  try {
+    const caseId = c.req.param('id')
+    
+    const result = await c.env.DB.prepare('SELECT * FROM clinical_cases WHERE id = ?')
+      .bind(caseId)
+      .first()
+
+    if (!result) {
+      return c.json({ error: 'Clinical case not found' }, 404)
     }
 
     const clinicalCase = {
@@ -235,10 +301,10 @@ generate.get('/clinical-case/random', async (c) => {
 
     return c.json({
       success: true,
-      clinical_case: clinicalCase
+      case: clinicalCase
     })
   } catch (error: any) {
-    console.error('Random Clinical Case Error:', error)
+    console.error('Get Clinical Case Error:', error)
     return c.json({ error: error.message || 'Failed to fetch clinical case' }, 500)
   }
 })

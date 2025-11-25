@@ -316,4 +316,162 @@ evaluations.post('/templates/:id/cases', async (c) => {
   }
 })
 
+/**
+ * POST /api/evaluations/start
+ * Démarrer une nouvelle évaluation pour un médecin
+ */
+evaluations.post('/start', async (c) => {
+  try {
+    const { template_id } = await c.req.json()
+    const authHeader = c.req.header('Authorization')
+    
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+    
+    // Extract doctor_id from token (simple approach for now)
+    const token = authHeader.substring(7) // Remove 'Bearer '
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const doctorId = payload.doctor_id
+    
+    if (!template_id) {
+      return c.json({ error: 'Template ID required' }, 400)
+    }
+    
+    // Get template details with QCMs and cases
+    const template = await c.env.DB.prepare('SELECT * FROM evaluation_templates WHERE id = ? AND is_active = 1')
+      .bind(template_id)
+      .first()
+    
+    if (!template) {
+      return c.json({ error: 'Template not found or not active' }, 404)
+    }
+    
+    // Get QCMs
+    const qcms = await c.env.DB.prepare(`
+      SELECT 
+        gq.id, gq.topic, gq.category, gq.difficulty, gq.question, gq.options, gq.correct_answer, gq.explanation, gq.reference
+      FROM evaluation_template_qcm etq
+      JOIN generated_qcm gq ON etq.qcm_id = gq.id
+      WHERE etq.template_id = ?
+      ORDER BY etq.order_index
+    `).bind(template_id).all()
+    
+    // Get clinical cases
+    const cases = await c.env.DB.prepare(`
+      SELECT 
+        cc.id, cc.specialty, cc.complexity, cc.title, cc.patient_profile, cc.presentation, 
+        cc.anamnesis, cc.questions, cc.red_flags, cc.diagnosis, cc.management, cc.prescription
+      FROM evaluation_template_cases etc
+      JOIN clinical_cases cc ON etc.case_id = cc.id
+      WHERE etc.template_id = ?
+      ORDER BY etc.order_index
+    `).bind(template_id).all()
+    
+    return c.json({
+      success: true,
+      evaluation: {
+        id: `eval-session-${Date.now()}`,
+        template_id,
+        name: template.name,
+        description: template.description,
+        duration_minutes: template.duration_minutes,
+        passing_score: template.passing_score,
+        qcms: qcms.results.map(q => ({
+          ...q,
+          options: JSON.parse(q.options as string)
+        })),
+        cases: cases.results.map(c => ({
+          ...c,
+          patient_profile: c.patient_profile,
+          presentation: c.presentation,
+          anamnesis: JSON.parse(c.anamnesis as string),
+          questions: JSON.parse(c.questions as string)
+        }))
+      }
+    })
+  } catch (error: any) {
+    console.error('Start Evaluation Error:', error)
+    return c.json({ error: error.message || 'Failed to start evaluation' }, 500)
+  }
+})
+
+/**
+ * POST /api/evaluations/submit
+ * Soumettre les réponses d'une évaluation
+ */
+evaluations.post('/submit', async (c) => {
+  try {
+    const { evaluation_id, answers, duration_seconds } = await c.req.json()
+    const authHeader = c.req.header('Authorization')
+    
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+    
+    const token = authHeader.substring(7)
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const doctorId = payload.doctor_id
+    
+    // For now, return mock results
+    // TODO: Calculate actual scores based on answers
+    const mockScore = 75 + Math.random() * 20
+    
+    return c.json({
+      success: true,
+      result: {
+        id: `result-${Date.now()}`,
+        evaluation_id,
+        doctor_id: doctorId,
+        tmcq_score: mockScore,
+        qcm_score: 80,
+        case_score: 70,
+        status: mockScore >= 75 ? 'apte' : mockScore >= 60 ? 'supervision_requise' : 'formation_requise',
+        created_at: new Date().toISOString()
+      }
+    })
+  } catch (error: any) {
+    console.error('Submit Evaluation Error:', error)
+    return c.json({ error: error.message || 'Failed to submit evaluation' }, 500)
+  }
+})
+
+/**
+ * GET /api/evaluations/results/:id
+ * Récupérer les résultats d'une évaluation
+ */
+evaluations.get('/results/:id', async (c) => {
+  try {
+    const resultId = c.req.param('id')
+    
+    // For now, return mock results
+    // TODO: Retrieve actual results from database
+    const mockScore = 75 + Math.random() * 20
+    
+    return c.json({
+      success: true,
+      results: {
+        id: resultId,
+        evaluation_name: 'Évaluation Médicale Générale',
+        tmcq_score: mockScore,
+        qcm_score: 80,
+        case_score: 70,
+        qcm_correct: 8,
+        qcm_total: 10,
+        case_correct: 2,
+        case_total: 3,
+        status: mockScore >= 75 ? 'apte' : mockScore >= 60 ? 'supervision_requise' : 'formation_requise',
+        created_at: new Date().toISOString(),
+        details: {
+          qcms: [],
+          cases: []
+        }
+      }
+    })
+  } catch (error: any) {
+    console.error('Get Results Error:', error)
+    return c.json({ error: error.message || 'Failed to get results' }, 500)
+  }
+})
+
 export default evaluations

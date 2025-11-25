@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Direct Evaluation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h1 class="text-2xl font-bold mb-6">🔍 Test Direct - Démarrer Évaluation</h1>
+            
+            <div class="space-y-4">
+                <!-- Step 1: Login -->
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <h2 class="font-bold text-lg mb-3">Étape 1: Se connecter</h2>
+                    <button onclick="doLogin()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                        🔐 Connexion automatique
+                    </button>
+                    <div id="login-status" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- Step 2: Start Evaluation -->
+                <div class="p-4 bg-green-50 rounded-lg">
+                    <h2 class="font-bold text-lg mb-3">Étape 2: Démarrer l'évaluation</h2>
+                    <button onclick="startEval()" id="start-btn" disabled class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                        🚀 Démarrer Évaluation Test
+                    </button>
+                    <div id="eval-status" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- Results -->
+                <div class="p-4 bg-gray-100 rounded-lg">
+                    <h2 class="font-bold text-lg mb-3">📋 Résultat</h2>
+                    <pre id="result" class="text-xs bg-gray-800 text-green-400 p-4 rounded overflow-auto max-h-96"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+
+        async function doLogin() {
+            const statusEl = document.getElementById('login-status');
+            statusEl.innerHTML = '<span class="text-blue-600">⏳ Connexion en cours...</span>';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'dr.jean.martin@tibok.mu',
+                        password: 'password123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.token) {
+                    token = data.token;
+                    localStorage.setItem('doctor_token', token);
+                    statusEl.innerHTML = '<span class="text-green-600">✅ Connecté ! Token stocké.</span>';
+                    document.getElementById('start-btn').disabled = false;
+                    document.getElementById('result').textContent = 'Token: ' + token.substring(0, 50) + '...';
+                } else {
+                    statusEl.innerHTML = '<span class="text-red-600">❌ Échec: ' + (data.error || 'Erreur inconnue') + '</span>';
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                statusEl.innerHTML = '<span class="text-red-600">❌ Erreur: ' + error.message + '</span>';
+                document.getElementById('result').textContent = error.stack;
+            }
+        }
+
+        async function startEval() {
+            const statusEl = document.getElementById('eval-status');
+            statusEl.innerHTML = '<span class="text-green-600">⏳ Chargement de l\'évaluation...</span>';
+
+            if (!token) {
+                token = localStorage.getItem('doctor_token');
+                if (!token) {
+                    statusEl.innerHTML = '<span class="text-red-600">❌ Pas de token. Connectez-vous d\'abord.</span>';
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/api/evaluations/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        template_id: 'eval-test-001'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    statusEl.innerHTML = '<span class="text-green-600">✅ Évaluation chargée avec succès !</span>';
+                    document.getElementById('result').textContent = 
+                        '✅ SUCCÈS !\n\n' +
+                        'Évaluation: ' + data.evaluation.name + '\n' +
+                        'Durée: ' + data.evaluation.duration_minutes + ' minutes\n' +
+                        'QCM: ' + data.evaluation.qcms.length + '\n' +
+                        'Cas cliniques: ' + data.evaluation.cases.length + '\n\n' +
+                        'Premier QCM:\n' + 
+                        JSON.stringify(data.evaluation.qcms[0], null, 2);
+                } else {
+                    statusEl.innerHTML = '<span class="text-red-600">❌ Échec: ' + (data.error || 'Erreur inconnue') + '</span>';
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                statusEl.innerHTML = '<span class="text-red-600">❌ Erreur: ' + error.message + '</span>';
+                document.getElementById('result').textContent = error.stack;
+            }
+        }
+
+        // Auto-check if token exists
+        window.addEventListener('load', () => {
+            const existingToken = localStorage.getItem('doctor_token');
+            if (existingToken) {
+                token = existingToken;
+                document.getElementById('login-status').innerHTML = '<span class="text-green-600">✅ Token déjà présent dans localStorage</span>';
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('result').textContent = 'Token existant: ' + token.substring(0, 50) + '...';
+            }
+        });
+    </script>
+</body>
+</html>

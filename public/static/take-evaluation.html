@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passer l'évaluation - Tibok Medical Evaluation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Header with Timer -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl font-bold text-blue-600">
+                        <i class="fas fa-clipboard-check mr-2"></i>
+                        <span id="eval-title">Évaluation en cours</span>
+                    </h1>
+                    <p class="text-sm text-gray-600">Question <span id="current-question">1</span> sur <span id="total-questions">0</span></p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="timer" class="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg font-bold text-lg">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span id="time-remaining">00:00</span>
+                    </div>
+                    <button onclick="confirmQuit()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        <i class="fas fa-times mr-2"></i>Quitter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="w-full bg-gray-200 h-2">
+        <div id="progress-bar" class="bg-blue-600 h-2 transition-all" style="width: 0%"></div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div id="evaluation-content" class="bg-white rounded-lg shadow-lg p-8">
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-5xl text-blue-600 mb-4"></i>
+                <p class="text-xl text-gray-700">Chargement de l'évaluation...</p>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div id="navigation-buttons" class="mt-6 flex justify-between" style="display: none;">
+            <button onclick="previousQuestion()" id="prev-btn" 
+                class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-arrow-left mr-2"></i>Précédent
+            </button>
+            <button onclick="nextQuestion()" id="next-btn" 
+                class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Suivant<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+            <button onclick="submitEvaluation()" id="submit-btn" 
+                class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700" style="display: none;">
+                <i class="fas fa-check mr-2"></i>Soumettre l'évaluation
+            </button>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '/api';
+        const token = localStorage.getItem('doctor_token');
+        
+        if (!token) {
+            window.location.href = '/static/login.html';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const templateId = urlParams.get('template');
+
+        let evaluationData = null;
+        let currentQuestionIndex = 0;
+        let answers = {};
+        let startTime = null;
+        let timerInterval = null;
+        let timeLimit = 60; // minutes
+
+        async function loadEvaluation() {
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ template_id: templateId })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('❌ Erreur: ' + (data.error || 'Impossible de charger l\'évaluation'));
+                    window.location.href = '/static/doctor-dashboard.html';
+                    return;
+                }
+
+                evaluationData = data.evaluation;
+                timeLimit = evaluationData.duration_minutes || 60;
+                
+                document.getElementById('eval-title').textContent = evaluationData.name;
+                document.getElementById('total-questions').textContent = 
+                    (evaluationData.qcms.length + evaluationData.cases.length);
+
+                startTime = Date.now();
+                startTimer();
+                displayQuestion();
+                document.getElementById('navigation-buttons').style.display = 'flex';
+
+            } catch (error) {
+                console.error('Error loading evaluation:', error);
+                alert('❌ Erreur lors du chargement de l\'évaluation');
+                window.location.href = '/static/doctor-dashboard.html';
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const remaining = (timeLimit * 60) - elapsed;
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    alert('⏰ Temps écoulé ! L\'évaluation va être soumise automatiquement.');
+                    submitEvaluation();
+                    return;
+                }
+
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                document.getElementById('time-remaining').textContent = 
+                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                // Warning when 5 minutes left
+                if (remaining === 300) {
+                    document.getElementById('timer').classList.remove('bg-blue-100', 'text-blue-800');
+                    document.getElementById('timer').classList.add('bg-red-100', 'text-red-800');
+                    alert('⚠️ Il ne reste que 5 minutes !');
+                }
+            }, 1000);
+        }
+
+        function displayQuestion() {
+            const totalQuestions = evaluationData.qcms.length + evaluationData.cases.length;
+            
+            document.getElementById('current-question').textContent = currentQuestionIndex + 1;
+            
+            const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+
+            const content = document.getElementById('evaluation-content');
+
+            // QCM Questions
+            if (currentQuestionIndex < evaluationData.qcms.length) {
+                const qcm = evaluationData.qcms[currentQuestionIndex];
+                const savedAnswer = answers[`qcm_${qcm.id}`];
+
+                content.innerHTML = `
+                    <div class="mb-4">
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                            <i class="fas fa-question-circle mr-1"></i>QCM
+                        </span>
+                        <span class="ml-2 text-sm text-gray-600">${qcm.topic} - ${qcm.difficulty}</span>
+                    </div>
+
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">${qcm.question}</h2>
+
+                    <div class="space-y-3">
+                        ${Object.entries(JSON.parse(qcm.options)).map(([key, value]) => `
+                            <label class="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:border-blue-400 transition ${savedAnswer === key ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}">
+                                <input type="radio" name="answer" value="${key}" 
+                                    ${savedAnswer === key ? 'checked' : ''}
+                                    onchange="saveAnswer('qcm_${qcm.id}', '${key}')"
+                                    class="mt-1 mr-3">
+                                <span class="flex-1">
+                                    <strong class="text-blue-600">${key}.</strong> ${value}
+                                </span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+            } 
+            // Clinical Cases
+            else {
+                const caseIndex = currentQuestionIndex - evaluationData.qcms.length;
+                const clinicalCase = evaluationData.cases[caseIndex];
+                const caseData = typeof clinicalCase.presentation === 'string' 
+                    ? JSON.parse(clinicalCase.presentation) 
+                    : clinicalCase.presentation;
+
+                content.innerHTML = `
+                    <div class="mb-4">
+                        <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
+                            <i class="fas fa-user-injured mr-1"></i>Cas Clinique
+                        </span>
+                        <span class="ml-2 text-sm text-gray-600">${clinicalCase.specialty} - ${clinicalCase.complexity}</span>
+                    </div>
+
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">${clinicalCase.title}</h2>
+
+                    <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-6">
+                        <h3 class="font-bold text-blue-900 mb-2">
+                            <i class="fas fa-user mr-2"></i>Profil du patient
+                        </h3>
+                        <p class="text-sm text-gray-700">${caseData.patient_profile || 'Non spécifié'}</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-bold text-gray-900 mb-2">Présentation:</h3>
+                        <p class="text-gray-700">${caseData.presentation || clinicalCase.presentation}</p>
+                    </div>
+
+                    ${caseData.anamnesis ? `
+                        <div class="mb-6">
+                            <h3 class="font-bold text-gray-900 mb-2">Anamnèse:</h3>
+                            <ul class="list-disc list-inside text-gray-700 space-y-1">
+                                ${(Array.isArray(caseData.anamnesis) ? caseData.anamnesis : [caseData.anamnesis]).map(item => 
+                                    `<li>${item}</li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    ${caseData.questions && caseData.questions.length > 0 ? `
+                        <div class="space-y-6">
+                            ${caseData.questions.map((q, idx) => {
+                                const savedAnswer = answers[`case_${clinicalCase.id}_q${idx}`];
+                                return `
+                                    <div class="border-t pt-6">
+                                        <h3 class="font-bold text-gray-900 mb-4">Question ${idx + 1}: ${q.q}</h3>
+                                        <div class="space-y-2">
+                                            ${Object.entries(q.options).map(([key, value]) => `
+                                                <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:border-purple-400 transition ${savedAnswer === key ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}">
+                                                    <input type="radio" name="case_q${idx}" value="${key}"
+                                                        ${savedAnswer === key ? 'checked' : ''}
+                                                        onchange="saveAnswer('case_${clinicalCase.id}_q${idx}', '${key}')"
+                                                        class="mt-1 mr-3">
+                                                    <span class="flex-1">
+                                                        <strong class="text-purple-600">${key}.</strong> ${value}
+                                                    </span>
+                                                </label>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            updateNavigationButtons();
+        }
+
+        function saveAnswer(questionId, answer) {
+            answers[questionId] = answer;
+        }
+
+        function updateNavigationButtons() {
+            const totalQuestions = evaluationData.qcms.length + evaluationData.cases.length;
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const submitBtn = document.getElementById('submit-btn');
+
+            prevBtn.disabled = currentQuestionIndex === 0;
+
+            if (currentQuestionIndex === totalQuestions - 1) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'block';
+            } else {
+                nextBtn.style.display = 'block';
+                submitBtn.style.display = 'none';
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            const totalQuestions = evaluationData.qcms.length + evaluationData.cases.length;
+            if (currentQuestionIndex < totalQuestions - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+            }
+        }
+
+        async function submitEvaluation() {
+            if (!confirm('⚠️ Êtes-vous sûr de vouloir soumettre l\'évaluation ? Vous ne pourrez plus la modifier.')) {
+                return;
+            }
+
+            clearInterval(timerInterval);
+
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        evaluation_id: evaluationData.id,
+                        answers: answers,
+                        duration_seconds: Math.floor((Date.now() - startTime) / 1000)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ Évaluation soumise avec succès !');
+                    window.location.href = `/static/evaluation-results.html?id=${data.result.id}`;
+                } else {
+                    alert('❌ Erreur: ' + (data.error || 'Impossible de soumettre'));
+                }
+
+            } catch (error) {
+                console.error('Error submitting evaluation:', error);
+                alert('❌ Erreur lors de la soumission');
+            }
+        }
+
+        function confirmQuit() {
+            if (confirm('⚠️ Voulez-vous vraiment quitter ? Votre progression ne sera PAS sauvegardée.')) {
+                clearInterval(timerInterval);
+                window.location.href = '/static/doctor-dashboard.html';
+            }
+        }
+
+        // Prevent accidental page close
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = '';
+        });
+
+        // Initialize
+        loadEvaluation();
+    </script>
+</body>
+</html>

@@ -350,7 +350,7 @@ evaluations.post('/start', async (c) => {
     // Get QCMs
     const qcms = await c.env.DB.prepare(`
       SELECT 
-        gq.id, gq.topic, gq.category, gq.difficulty, gq.question, gq.options, gq.correct_answer, gq.explanation, gq.reference
+        gq.id, gq.topic, gq.category, gq.difficulty, gq.question, gq.options, gq.correct_answer, gq.justification, gq.source
       FROM evaluation_template_qcm etq
       JOIN generated_qcm gq ON etq.qcm_id = gq.id
       WHERE etq.template_id = ?

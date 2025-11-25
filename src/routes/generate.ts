@@ -233,14 +233,27 @@ generate.get('/clinical-case/random', async (c) => {
 
     const result = await c.env.DB.prepare(query).bind(...params).all()
 
-    const cases = result.results.map((row: any) => ({
-      ...row,
-      patient_profile: JSON.parse(row.patient_profile as string),
-      anamnesis: JSON.parse(row.anamnesis as string),
-      questions: JSON.parse(row.questions as string),
-      red_flags: JSON.parse(row.red_flags as string),
-      prescription: JSON.parse(row.prescription as string)
-    }))
+    const cases = result.results.map((row: any) => {
+      // Helper function to safely parse JSON or return as-is if string
+      const safeParse = (value: any) => {
+        if (!value) return null
+        if (typeof value === 'object') return value
+        try {
+          return JSON.parse(value as string)
+        } catch {
+          return value // Return as-is if not valid JSON (plain string)
+        }
+      }
+      
+      return {
+        ...row,
+        patient_profile: safeParse(row.patient_profile),
+        anamnesis: safeParse(row.anamnesis),
+        questions: safeParse(row.questions),
+        red_flags: safeParse(row.red_flags),
+        prescription: safeParse(row.prescription)
+      }
+    })
 
     return c.json({
       success: true,

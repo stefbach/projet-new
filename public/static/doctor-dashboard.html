@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Médecin - Tibok Medical Evaluation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-blue-600">
+                    <i class="fas fa-stethoscope mr-2"></i>Tibok Medical Evaluation
+                </h1>
+                <p class="text-sm text-gray-600" id="doctor-name">Chargement...</p>
+            </div>
+            <button onclick="logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                <i class="fas fa-sign-out-alt mr-2"></i>Déconnexion
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Score T-MCQ</p>
+                        <p class="text-3xl font-bold text-blue-600" id="tmcq-score">N/A</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Statut TIBOK</p>
+                        <p class="text-lg font-bold" id="tibok-status">N/A</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Évaluations</p>
+                        <p class="text-3xl font-bold text-purple-600" id="eval-count">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-clipboard-list text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Dernière éval.</p>
+                        <p class="text-sm font-semibold text-gray-700" id="last-eval">Jamais</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-clock text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Evaluations -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-list-check mr-2 text-blue-600"></i>
+                    Évaluations disponibles
+                </h2>
+            </div>
+            <div class="p-6">
+                <div id="available-evaluations" class="space-y-4">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-2"></i>
+                        <p>Chargement des évaluations...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluation History -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-history mr-2 text-purple-600"></i>
+                    Historique des évaluations
+                </h2>
+            </div>
+            <div class="p-6">
+                <div id="evaluation-history">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-2"></i>
+                        <p>Chargement de l'historique...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '/api';
+        let currentDoctor = null;
+
+        // Check authentication
+        const token = localStorage.getItem('doctor_token');
+        if (!token) {
+            window.location.href = '/static/login.html';
+        }
+
+        // Load doctor data
+        async function loadDoctorData() {
+            try {
+                const response = await fetch(`${API_BASE}/doctors/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error('Unauthorized');
+                }
+
+                currentDoctor = data.doctor;
+                
+                // Update UI
+                document.getElementById('doctor-name').textContent = 
+                    `Dr. ${currentDoctor.name} - ${currentDoctor.specialty || 'Médecin'}`;
+                
+                // Update stats
+                document.getElementById('tmcq-score').textContent = 
+                    currentDoctor.tmcq_total ? currentDoctor.tmcq_total.toFixed(1) : 'N/A';
+                
+                const status = getStatusBadge(currentDoctor.evaluation_status);
+                document.getElementById('tibok-status').innerHTML = status;
+                
+                document.getElementById('eval-count').textContent = currentDoctor.evaluation_count || 0;
+                
+                if (currentDoctor.last_evaluation_date) {
+                    const date = new Date(currentDoctor.last_evaluation_date);
+                    document.getElementById('last-eval').textContent = date.toLocaleDateString('fr-FR');
+                } else {
+                    document.getElementById('last-eval').textContent = 'Jamais';
+                }
+
+                loadAvailableEvaluations();
+                loadEvaluationHistory();
+
+            } catch (error) {
+                console.error('Error loading doctor data:', error);
+                localStorage.removeItem('doctor_token');
+                window.location.href = '/static/login.html';
+            }
+        }
+
+        // Load available evaluations
+        async function loadAvailableEvaluations() {
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/templates?status=active`);
+                const data = await response.json();
+
+                const container = document.getElementById('available-evaluations');
+
+                if (!data.success || data.templates.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-2"></i>
+                            <p>Aucune évaluation disponible pour le moment</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.templates.map(template => `
+                    <div class="border border-gray-200 rounded-lg p-6 hover:border-blue-400 transition">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">${template.name}</h3>
+                                <p class="text-sm text-gray-600 mt-1">${template.description || 'Évaluation médicale'}</p>
+                            </div>
+                            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                                <i class="fas fa-check-circle mr-1"></i>Active
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div class="text-center p-3 bg-blue-50 rounded-lg">
+                                <p class="text-2xl font-bold text-blue-600">${template.qcm_count || 0}</p>
+                                <p class="text-xs text-gray-600">QCM</p>
+                            </div>
+                            <div class="text-center p-3 bg-purple-50 rounded-lg">
+                                <p class="text-2xl font-bold text-purple-600">${template.case_count || 0}</p>
+                                <p class="text-xs text-gray-600">Cas cliniques</p>
+                            </div>
+                            <div class="text-center p-3 bg-orange-50 rounded-lg">
+                                <p class="text-2xl font-bold text-orange-600">${template.duration_minutes || 60}</p>
+                                <p class="text-xs text-gray-600">Minutes</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm text-gray-600 mb-4">
+                            <span><i class="fas fa-percentage mr-1"></i>Score minimum: ${template.passing_score || 70}%</span>
+                        </div>
+
+                        <button onclick="startEvaluation('${template.id}')" 
+                            class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
+                            <i class="fas fa-play mr-2"></i>Commencer l'évaluation
+                        </button>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading evaluations:', error);
+            }
+        }
+
+        // Load evaluation history
+        async function loadEvaluationHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/doctors/me/evaluations`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                const container = document.getElementById('evaluation-history');
+
+                if (!data.success || data.evaluations.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-2"></i>
+                            <p>Aucune évaluation passée</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 border-b">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Évaluation</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Score T-MCQ</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">QCM</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Cas</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Statut</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${data.evaluations.map(eval => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 text-sm">${new Date(eval.created_at).toLocaleDateString('fr-FR')}</td>
+                                        <td class="px-4 py-3 text-sm font-medium">${eval.template_name || 'Évaluation'}</td>
+                                        <td class="px-4 py-3 text-sm font-bold text-blue-600">${eval.tmcq_score ? eval.tmcq_score.toFixed(1) : 'N/A'}</td>
+                                        <td class="px-4 py-3 text-sm">${eval.qcm_score ? eval.qcm_score.toFixed(0) : 0}%</td>
+                                        <td class="px-4 py-3 text-sm">${eval.case_score ? eval.case_score.toFixed(0) : 0}%</td>
+                                        <td class="px-4 py-3 text-sm">${getStatusBadge(eval.status)}</td>
+                                        <td class="px-4 py-3 text-sm">
+                                            <button onclick="viewResults('${eval.id}')" class="text-blue-600 hover:text-blue-800">
+                                                <i class="fas fa-eye"></i> Voir
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'apte': '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">✓ APTE</span>',
+                'supervision_requise': '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">⚠ SUPERVISION</span>',
+                'formation_requise': '<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-semibold">✗ FORMATION</span>'
+            };
+            return badges[status] || '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">N/A</span>';
+        }
+
+        function startEvaluation(templateId) {
+            window.location.href = `/static/take-evaluation.html?template=${templateId}`;
+        }
+
+        function viewResults(evaluationId) {
+            window.location.href = `/static/evaluation-results.html?id=${evaluationId}`;
+        }
+
+        function logout() {
+            localStorage.removeItem('doctor_token');
+            window.location.href = '/static/login.html';
+        }
+
+        // Initialize
+        loadDoctorData();
+    </script>
+</body>
+</html>

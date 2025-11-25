@@ -249,6 +249,218 @@ admin.put('/alert/:alertId/resolve', async (c) => {
 })
 
 /**
+ * GET /api/admin/config
+ * Récupérer la configuration API
+ */
+admin.get('/config', async (c) => {
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT config_key, 
+             CASE 
+               WHEN config_value = '' THEN ''
+               ELSE 'sk-****' || SUBSTR(config_value, -4)
+             END as config_value_masked,
+             CASE 
+               WHEN config_value = '' THEN 0
+               ELSE 1
+             END as is_configured
+      FROM api_config
+      WHERE config_key = 'openai_api_key'
+    `).first()
+
+    return c.json({
+      success: true,
+      config: result
+    })
+  } catch (error: any) {
+    console.error('Get Config Error:', error)
+    return c.json({ error: error.message || 'Failed to fetch config' }, 500)
+  }
+})
+
+/**
+ * PUT /api/admin/config
+ * Mettre à jour la clé API OpenAI
+ */
+admin.put('/config', async (c) => {
+  try {
+    const { api_key } = await c.req.json()
+
+    if (!api_key || !api_key.startsWith('sk-')) {
+      return c.json({ error: 'Invalid OpenAI API key format' }, 400)
+    }
+
+    await c.env.DB.prepare(`
+      UPDATE api_config
+      SET config_value = ?, updated_at = datetime('now')
+      WHERE config_key = 'openai_api_key'
+    `).bind(api_key).run()
+
+    return c.json({
+      success: true,
+      message: 'API key configured successfully'
+    })
+  } catch (error: any) {
+    console.error('Update Config Error:', error)
+    return c.json({ error: error.message || 'Failed to update config' }, 500)
+  }
+})
+
+/**
+ * POST /api/admin/doctor
+ * Créer un nouveau médecin
+ */
+admin.post('/doctor', async (c) => {
+  try {
+    const { name, email, specialty, password } = await c.req.json()
+
+    if (!name || !email || !specialty || !password) {
+      return c.json({ error: 'Name, email, specialty and password are required' }, 400)
+    }
+
+    // Vérifier si l'email existe déjà
+    const existing = await c.env.DB.prepare('SELECT id FROM doctors WHERE email = ?')
+      .bind(email)
+      .first()
+
+    if (existing) {
+      return c.json({ error: 'Email already exists' }, 400)
+    }
+
+    // Hash du mot de passe (simple pour l'exemple)
+    const crypto = await import('crypto')
+    const password_hash = crypto.createHash('sha256').update(password).digest('hex')
+
+    const result = await c.env.DB.prepare(`
+      INSERT INTO doctors (name, email, specialty, password_hash)
+      VALUES (?, ?, ?, ?)
+    `).bind(name, email, specialty, password_hash).run()
+
+    return c.json({
+      success: true,
+      doctor_id: result.meta.last_row_id,
+      message: 'Doctor created successfully'
+    })
+  } catch (error: any) {
+    console.error('Create Doctor Error:', error)
+    return c.json({ error: error.message || 'Failed to create doctor' }, 500)
+  }
+})
+
+/**
+ * PUT /api/admin/doctor/:doctorId
+ * Mettre à jour un médecin
+ */
+admin.put('/doctor/:doctorId', async (c) => {
+  try {
+    const doctorId = c.req.param('doctorId')
+    const { name, email, specialty, role } = await c.req.json()
+
+    const updates: string[] = []
+    const params: any[] = []
+
+    if (name) {
+      updates.push('name = ?')
+      params.push(name)
+    }
+    if (email) {
+      updates.push('email = ?')
+      params.push(email)
+    }
+    if (specialty) {
+      updates.push('specialty = ?')
+      params.push(specialty)
+    }
+    if (role) {
+      updates.push('role = ?')
+      params.push(role)
+    }
+
+    if (updates.length === 0) {
+      return c.json({ error: 'No fields to update' }, 400)
+    }
+
+    params.push(doctorId)
+
+    await c.env.DB.prepare(`
+      UPDATE doctors
+      SET ${updates.join(', ')}
+      WHERE id = ?
+    `).bind(...params).run()
+
+    return c.json({
+      success: true,
+      message: 'Doctor updated successfully'
+    })
+  } catch (error: any) {
+    console.error('Update Doctor Error:', error)
+    return c.json({ error: error.message || 'Failed to update doctor' }, 500)
+  }
+})
+
+/**
+ * DELETE /api/admin/doctor/:doctorId
+ * Supprimer un médecin
+ */
+admin.delete('/doctor/:doctorId', async (c) => {
+  try {
+    const doctorId = c.req.param('doctorId')
+
+    await c.env.DB.prepare('DELETE FROM doctors WHERE id = ?')
+      .bind(doctorId)
+      .run()
+
+    return c.json({
+      success: true,
+      message: 'Doctor deleted successfully'
+    })
+  } catch (error: any) {
+    console.error('Delete Doctor Error:', error)
+    return c.json({ error: error.message || 'Failed to delete doctor' }, 500)
+  }
+})
+
+/**
+ * GET /api/admin/ranking
+ * Classement des médecins par score T-MCQ
+ */
+admin.get('/ranking', async (c) => {
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT 
+        d.id,
+        d.name,
+        d.email,
+        d.specialty,
+        de.tmcq_total,
+        de.status as evaluation_status,
+        de.evaluation_date
+      FROM doctors d
+      LEFT JOIN (
+        SELECT doctor_id, tmcq_total, status, evaluation_date
+        FROM doctors_evaluations
+        WHERE id IN (
+          SELECT id FROM doctors_evaluations de2
+          WHERE de2.doctor_id = doctors_evaluations.doctor_id
+          ORDER BY de2.evaluation_date DESC
+          LIMIT 1
+        )
+      ) de ON d.id = de.doctor_id
+      WHERE d.role = 'doctor'
+      ORDER BY de.tmcq_total DESC, d.name
+    `).all()
+
+    return c.json({
+      success: true,
+      ranking: result.results
+    })
+  } catch (error: any) {
+    console.error('Ranking Error:', error)
+    return c.json({ error: error.message || 'Failed to fetch ranking' }, 500)
+  }
+})
+
+/**
  * GET /api/admin/stats
  * Statistiques globales du système
  */

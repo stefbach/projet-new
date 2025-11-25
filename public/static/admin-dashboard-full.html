@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIBOK Admin - Dashboard Complet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-user-shield text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">TIBOK Medical Evaluation</h1>
+                        <p class="text-blue-200 text-sm">Dashboard Administrateur</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="api-status" class="px-3 py-1 bg-yellow-500 text-white rounded-full text-sm">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>API non configurée
+                    </span>
+                    <button onclick="location.href='/static/index.html'" class="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50">
+                        <i class="fas fa-home mr-2"></i>Accueil
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="container mx-auto px-4">
+            <nav class="flex space-x-1">
+                <button onclick="showTab('dashboard')" class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600" data-tab="dashboard">
+                    <i class="fas fa-chart-line mr-2"></i>Dashboard
+                </button>
+                <button onclick="showTab('doctors')" class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600" data-tab="doctors">
+                    <i class="fas fa-users mr-2"></i>Médecins
+                </button>
+                <button onclick="showTab('ranking')" class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600" data-tab="ranking">
+                    <i class="fas fa-trophy mr-2"></i>Classement
+                </button>
+                <button onclick="showTab('config')" class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600" data-tab="config">
+                    <i class="fas fa-cog mr-2"></i>Configuration
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Tab: Dashboard -->
+        <div id="tab-dashboard" class="tab-content">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Médecins</p>
+                            <p class="text-3xl font-bold text-blue-600" id="stat-doctors">0</p>
+                        </div>
+                        <i class="fas fa-users text-4xl text-blue-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">QCM</p>
+                            <p class="text-3xl font-bold text-green-600" id="stat-qcm">0</p>
+                        </div>
+                        <i class="fas fa-question-circle text-4xl text-green-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Cas Cliniques</p>
+                            <p class="text-3xl font-bold text-purple-600" id="stat-cases">0</p>
+                        </div>
+                        <i class="fas fa-file-medical text-4xl text-purple-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Alertes</p>
+                            <p class="text-3xl font-bold text-red-600" id="stat-alerts">0</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-200"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Répartition par Statut</h3>
+                    <canvas id="statusChart"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Score Moyen par Spécialité</h3>
+                    <canvas id="specialtyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Doctors -->
+        <div id="tab-doctors" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Gestion des Médecins</h2>
+                    <button onclick="showCreateDoctorModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Nouveau Médecin
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Nom</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Email</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Spécialité</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Score T-MCQ</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Statut</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doctors-table-body" class="divide-y divide-gray-200">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Ranking -->
+        <div id="tab-ranking" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-6">🏆 Classement des Médecins</h2>
+                
+                <div class="space-y-3" id="ranking-list">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Config -->
+        <div id="tab-config" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-6">⚙️ Configuration API OpenAI</h2>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Clé API OpenAI
+                    </label>
+                    <div class="flex space-x-4">
+                        <input type="password" id="api-key-input" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="sk-...">
+                        <button onclick="toggleAPIKeyVisibility()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                            <i class="fas fa-eye" id="toggle-icon"></i>
+                        </button>
+                        <button onclick="saveAPIKey()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-save mr-2"></i>Enregistrer
+                        </button>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Format: sk-proj-... (obtenir sur <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">platform.openai.com</a>)
+                    </p>
+                </div>
+
+                <div id="api-key-status" class="p-4 rounded-lg hidden">
+                    <!-- Status messages -->
+                </div>
+
+                <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                    <h3 class="font-semibold text-blue-900 mb-2">💡 Pourquoi configurer la clé API ?</h3>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>• Génération illimitée de QCM basés sur guidelines OMS/WHO</li>
+                        <li>• Création de cas cliniques réalistes</li>
+                        <li>• Audit automatique des téléconsultations</li>
+                        <li>• Détection des red flags médicaux</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Create Doctor -->
+    <div id="create-doctor-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Nouveau Médecin</h3>
+                <button onclick="hideCreateDoctorModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form onsubmit="createDoctor(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+                        <input type="text" id="new-doctor-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Dr. Jean Martin">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="new-doctor-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="jean.martin@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Spécialité</label>
+                        <select id="new-doctor-specialty" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Choisir --</option>
+                            <option value="Médecine Générale">Médecine Générale</option>
+                            <option value="Pédiatrie">Pédiatrie</option>
+                            <option value="Cardiologie">Cardiologie</option>
+                            <option value="Dermatologie">Dermatologie</option>
+                            <option value="Psychiatrie">Psychiatrie</option>
+                            <option value="Gynécologie">Gynécologie</option>
+                            <option value="Urgences">Urgences</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe initial</label>
+                        <input type="password" id="new-doctor-password" required minlength="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Minimum 8 caractères">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex space-x-3">
+                    <button type="button" onclick="hideCreateDoctorModal()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        Annuler
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-check mr-2"></i>Créer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentTab = 'dashboard';
+        let statusChart = null;
+        let specialtyChart = null;
+
+        // Tab Management
+        function showTab(tabName) {
+            currentTab = tabName;
+            
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active state from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+            });
+            
+            // Show selected tab
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            // Activate button
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('border-blue-600', 'text-blue-600');
+            
+            // Load data for tab
+            if (tabName === 'dashboard') {
+                loadDashboard();
+            } else if (tabName === 'doctors') {
+                loadDoctors();
+            } else if (tabName === 'ranking') {
+                loadRanking();
+            } else if (tabName === 'config') {
+                loadConfig();
+            }
+        }
+
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/stats`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('stat-doctors').textContent = stats.total_doctors || 0;
+                    document.getElementById('stat-qcm').textContent = stats.content?.total_qcm || 0;
+                    document.getElementById('stat-cases').textContent = stats.content?.total_cases || 0;
+                    document.getElementById('stat-alerts').textContent = stats.unresolved_alerts || 0;
+                    
+                    // Load charts
+                    loadCharts();
+                }
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+            }
+        }
+
+        // Load Charts
+        async function loadCharts() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctors`);
+                const data = await response.json();
+                
+                if (!data.success) return;
+                
+                const doctors = data.doctors;
+                
+                // Status Chart
+                const statusCounts = {
+                    'apte': 0,
+                    'supervision_requise': 0,
+                    'formation_requise': 0,
+                    'non_évalué': 0
+                };
+                
+                doctors.forEach(doc => {
+                    const status = doc.evaluation_status || 'non_évalué';
+                    statusCounts[status] = (statusCounts[status] || 0) + 1;
+                });
+                
+                if (statusChart) statusChart.destroy();
+                const statusCtx = document.getElementById('statusChart').getContext('2d');
+                statusChart = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Apte', 'Supervision', 'Formation', 'Non évalué'],
+                        datasets: [{
+                            data: [
+                                statusCounts.apte,
+                                statusCounts.supervision_requise,
+                                statusCounts.formation_requise,
+                                statusCounts.non_évalué
+                            ],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#6b7280']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+                
+                // Specialty Chart
+                const specialtyCounts = {};
+                doctors.forEach(doc => {
+                    const specialty = doc.specialty || 'Non spécifié';
+                    specialtyCounts[specialty] = (specialtyCounts[specialty] || 0) + 1;
+                });
+                
+                if (specialtyChart) specialtyChart.destroy();
+                const specialtyCtx = document.getElementById('specialtyChart').getContext('2d');
+                specialtyChart = new Chart(specialtyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(specialtyCounts),
+                        datasets: [{
+                            label: 'Nombre de médecins',
+                            data: Object.values(specialtyCounts),
+                            backgroundColor: '#3b82f6'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load charts:', error);
+            }
+        }
+
+        // Load Doctors
+        async function loadDoctors() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctors`);
+                const data = await response.json();
+                
+                if (!data.success) return;
+                
+                const tbody = document.getElementById('doctors-table-body');
+                tbody.innerHTML = data.doctors.map(doctor => {
+                    const statusBadge = getStatusBadge(doctor.evaluation_status);
+                    const score = doctor.tmcq_total ? doctor.tmcq_total.toFixed(1) : 'N/A';
+                    
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 text-sm">${doctor.name}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">${doctor.email}</td>
+                            <td class="px-4 py-3 text-sm">${doctor.specialty || 'N/A'}</td>
+                            <td class="px-4 py-3 text-sm font-semibold">${score}</td>
+                            <td class="px-4 py-3 text-sm">${statusBadge}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <button onclick="viewDoctor('${doctor.id}')" class="text-blue-600 hover:text-blue-800 mr-3">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editDoctor('${doctor.id}')" class="text-green-600 hover:text-green-800 mr-3">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteDoctor('${doctor.id}', '${doctor.name}')" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load doctors:', error);
+            }
+        }
+
+        // Load Ranking
+        async function loadRanking() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/ranking`);
+                const data = await response.json();
+                
+                if (!data.success) return;
+                
+                const rankingList = document.getElementById('ranking-list');
+                rankingList.innerHTML = data.ranking.map((doctor, index) => {
+                    const score = doctor.tmcq_total ? doctor.tmcq_total.toFixed(1) : 'N/A';
+                    const statusBadge = getStatusBadge(doctor.evaluation_status);
+                    
+                    let medalIcon = '';
+                    if (index === 0) medalIcon = '🥇';
+                    else if (index === 1) medalIcon = '🥈';
+                    else if (index === 2) medalIcon = '🥉';
+                    
+                    return `
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                            <div class="flex items-center space-x-4">
+                                <div class="text-2xl font-bold text-gray-400 w-8">${medalIcon || (index + 1)}</div>
+                                <div>
+                                    <div class="font-semibold text-gray-900">${doctor.name}</div>
+                                    <div class="text-sm text-gray-500">${doctor.specialty || 'N/A'}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                ${statusBadge}
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-blue-600">${score}</div>
+                                    <div class="text-xs text-gray-500">Score T-MCQ</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load ranking:', error);
+            }
+        }
+
+        // Load Config
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/config`);
+                const data = await response.json();
+                
+                if (data.success && data.config) {
+                    const apiStatus = document.getElementById('api-status');
+                    if (data.config.is_configured) {
+                        apiStatus.innerHTML = '<i class="fas fa-check-circle mr-1"></i>API configurée';
+                        apiStatus.className = 'px-3 py-1 bg-green-500 text-white rounded-full text-sm';
+                        
+                        document.getElementById('api-key-input').placeholder = data.config.config_value_masked;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        // Save API Key
+        async function saveAPIKey() {
+            const apiKey = document.getElementById('api-key-input').value.trim();
+            
+            if (!apiKey) {
+                showStatus('Veuillez entrer une clé API', 'error');
+                return;
+            }
+            
+            if (!apiKey.startsWith('sk-')) {
+                showStatus('Format de clé invalide (doit commencer par sk-)', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('✅ Clé API enregistrée avec succès', 'success');
+                    document.getElementById('api-key-input').value = '';
+                    loadConfig();
+                } else {
+                    showStatus('❌ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Erreur lors de l\'enregistrement', 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('api-key-status');
+            statusDiv.textContent = message;
+            statusDiv.className = `p-4 rounded-lg ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            statusDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        function toggleAPIKeyVisibility() {
+            const input = document.getElementById('api-key-input');
+            const icon = document.getElementById('toggle-icon');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // Modal Management
+        function showCreateDoctorModal() {
+            document.getElementById('create-doctor-modal').classList.remove('hidden');
+            document.getElementById('create-doctor-modal').classList.add('flex');
+        }
+
+        function hideCreateDoctorModal() {
+            document.getElementById('create-doctor-modal').classList.add('hidden');
+            document.getElementById('create-doctor-modal').classList.remove('flex');
+        }
+
+        // Create Doctor
+        async function createDoctor(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('new-doctor-name').value;
+            const email = document.getElementById('new-doctor-email').value;
+            const specialty = document.getElementById('new-doctor-specialty').value;
+            const password = document.getElementById('new-doctor-password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctor`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, specialty, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Médecin créé avec succès');
+                    hideCreateDoctorModal();
+                    loadDoctors();
+                } else {
+                    alert('❌ ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Erreur lors de la création');
+            }
+        }
+
+        // Delete Doctor
+        async function deleteDoctor(doctorId, doctorName) {
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer ${doctorName} ?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctor/${doctorId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Médecin supprimé');
+                    loadDoctors();
+                } else {
+                    alert('❌ ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Erreur lors de la suppression');
+            }
+        }
+
+        function viewDoctor(doctorId) {
+            window.open(`/static/doctor-detail.html?id=${doctorId}`, '_blank');
+        }
+
+        function editDoctor(doctorId) {
+            alert('Fonctionnalité à venir');
+        }
+
+        // Helper Functions
+        function getStatusBadge(status) {
+            if (status === 'apte') {
+                return '<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ Apte</span>';
+            } else if (status === 'supervision_requise') {
+                return '<span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⚠️ Supervision</span>';
+            } else if (status === 'formation_requise') {
+                return '<span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">❌ Formation</span>';
+            }
+            return '<span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-semibold">Non évalué</span>';
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            showTab('dashboard');
+            loadConfig();
+        });
+    </script>
+</body>
+</html>

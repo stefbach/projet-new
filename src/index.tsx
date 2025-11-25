@@ -7,6 +7,9 @@ import { serveStatic } from 'hono/cloudflare-workers'
 import type { Bindings } from './types/medical'
 
 // Import routes
+import authRoutes from './routes/auth'
+import doctorsRoutes from './routes/doctors'
+import sessionsRoutes from './routes/sessions'
 import generateRoutes from './routes/generate'
 import evaluateRoutes from './routes/evaluate'
 import adminRoutes from './routes/admin'
@@ -20,6 +23,9 @@ app.use('/api/*', cors())
 app.use('/static/*', serveStatic({ root: './public' }))
 
 // API Routes
+app.route('/api/auth', authRoutes)
+app.route('/api/doctors', doctorsRoutes)
+app.route('/api/sessions', sessionsRoutes)
 app.route('/api/generate', generateRoutes)
 app.route('/api/evaluate', evaluateRoutes)
 app.route('/api/admin', adminRoutes)

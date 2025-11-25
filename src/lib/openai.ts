@@ -83,63 +83,73 @@ Guidelines de référence : ${guidelines}`
     }))
   }
 
-  async generateClinicalCase(specialty: string, complexity: string, patientProfile?: any): Promise<ClinicalCase> {
+  async generateClinicalCase(specialty: string, complexity: string, count: number = 1, patientProfile?: any): Promise<ClinicalCase[]> {
     const systemPrompt = `Tu es un expert médical spécialisé en ${specialty}.
-Génère un cas clinique réaliste de complexité ${complexity}.
+Génère ${count} cas cliniques réalistes de complexité ${complexity}.
 
 Structure obligatoire JSON :
 {
-  "specialty": "...",
-  "complexity": "simple|intermediate|complex",
-  "title": "Titre court du cas",
-  "patient_profile": {
-    "age": number,
-    "sex": "M|F",
-    "location": "Maurice|Rodrigues",
-    "background": "Antécédents pertinents"
-  },
-  "presentation": "Motif de consultation et histoire",
-  "anamnesis": ["Élément 1", "Élément 2", ...],
-  "questions": [
+  "cases": [
     {
-      "q": "Question clinique",
-      "options": {
-        "A": "...",
-        "B": "...",
-        "C": "...",
-        "D": "..."
+      "specialty": "...",
+      "complexity": "simple|intermediate|complex",
+      "title": "Titre court du cas",
+      "patient_profile": {
+        "age": number,
+        "sex": "M|F",
+        "location": "Maurice|Rodrigues",
+        "background": "Antécédents pertinents"
       },
-      "correct": "A|B|C|D",
-      "rationale": "Justification"
+      "presentation": "Motif de consultation et histoire",
+      "anamnesis": {
+        "chief_complaint": "...",
+        "history": "...",
+        "past_medical_history": "..."
+      },
+      "questions": [
+        {
+          "q": "Question clinique",
+          "options": {
+            "A": "...",
+            "B": "...",
+            "C": "...",
+            "D": "..."
+          },
+          "correct": "A|B|C|D",
+          "rationale": "Justification"
+        }
+      ],
+      "red_flags": ["Red flag 1", "Red flag 2"],
+      "diagnosis": "Diagnostic principal",
+      "management": "Conduite à tenir selon guidelines OMS",
+      "prescription": {
+        "who_eml_compliant": true,
+        "medications": [
+          {
+            "name": "Nom DCI",
+            "dosage": "...",
+            "frequency": "...",
+            "duration": "...",
+            "route": "oral|IM|IV"
+          }
+        ]
+      },
+      "source": "WHO Guideline ou référence OMS vérifiable"
     }
-  ],
-  "red_flags": ["Red flag 1", "Red flag 2"],
-  "diagnosis": "Diagnostic principal",
-  "management": "Conduite à tenir selon guidelines OMS",
-  "prescription": {
-    "who_eml_compliant": true,
-    "medications": [
-      {
-        "name": "Nom DCI",
-        "dosage": "...",
-        "frequency": "...",
-        "duration": "...",
-        "route": "oral|IM|IV",
-        "who_eml_code": "Code WHO EML si disponible"
-      }
-    ]
-  },
-  "source": "WHO Guideline ou référence OMS vérifiable"
+  ]
 }
 
 Contexte Maurice :
 - Prévalence élevée : diabète, HTA, maladies cardiovasculaires
 - Pathologies tropicales : dengue, chikungunya, leptospirose
 - Système de santé : téléconsultation, accès limité aux spécialistes
-- Respect strict des guidelines OMS et WHO Essential Medicines List 2023`
+- Respect strict des guidelines OMS et WHO Essential Medicines List 2023
 
-    const userPrompt = `Génère un cas clinique en ${specialty}, complexité ${complexity}.
-${patientProfile ? `Profil patient souhaité : ${JSON.stringify(patientProfile)}` : ''}`
+IMPORTANT : Génère exactement ${count} cas cliniques DIFFÉRENTS et VARIÉS.`
+
+    const userPrompt = `Génère ${count} cas cliniques en ${specialty}, complexité ${complexity}.
+${patientProfile ? `Profil patient souhaité : ${JSON.stringify(patientProfile)}` : ''}
+Assure-toi que chaque cas soit unique et couvre différents aspects de la spécialité.`
 
     const data = await this.callOpenAI([
       { role: 'system', content: systemPrompt },
@@ -147,12 +157,12 @@ ${patientProfile ? `Profil patient souhaité : ${JSON.stringify(patientProfile)}
     ])
 
     const result = JSON.parse(data.choices[0].message.content)
-    return {
+    return result.cases.map((clinicalCase: any) => ({
       id: crypto.randomUUID(),
-      ...result,
+      ...clinicalCase,
       used_count: 0,
       created_at: new Date().toISOString()
-    }
+    }))
   }
 
   async evaluateConsultation(transcript: string, patientInfo?: any): Promise<AIAuditOutput> {

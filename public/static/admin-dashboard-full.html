@@ -1224,52 +1224,34 @@
                             Temps estimé: ~${estimatedTime} minutes
                         </p>
                         <p class="text-xs text-purple-600 mt-2">
-                            Ne fermez pas cette page. La génération se fait en arrière-plan.
+                            ⚠️ Ne fermez pas cette page. La génération se fait en une seule requête.
                         </p>
                     </div>
                 </div>
             `;
             
             try {
-                // Générer les cas cliniques un par un (car chaque cas est complexe)
-                let successCount = 0;
+                // UN SEUL appel API pour générer TOUS les cas
+                const response = await fetch(`${API_BASE}/generate/clinical-case`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        specialty, 
+                        complexity,
+                        count 
+                    })
+                });
                 
-                for (let i = 0; i < count; i++) {
-                    try {
-                        const response = await fetch(`${API_BASE}/generate/clinical-case`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ specialty, complexity })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.success || data.clinical_case) {
-                            successCount++;
-                            
-                            // Update progress
-                            caseListDiv.innerHTML = `
-                                <div class="text-center py-12">
-                                    <i class="fas fa-spinner fa-spin text-5xl text-purple-600 mb-4"></i>
-                                    <p class="text-xl font-semibold text-gray-900 mb-2">Génération en cours...</p>
-                                    <p class="text-gray-600 mb-4">Progression: ${successCount}/${count} cas générés</p>
-                                    <div class="w-full max-w-md mx-auto bg-gray-200 rounded-full h-4 mb-4">
-                                        <div class="bg-purple-600 h-4 rounded-full transition-all" style="width: ${(successCount/count*100).toFixed(0)}%"></div>
-                                    </div>
-                                    <p class="text-sm text-purple-600">
-                                        Temps restant estimé: ~${Math.ceil((count - successCount) * 1)} minutes
-                                    </p>
-                                </div>
-                            `;
-                        }
-                    } catch (err) {
-                        console.error('Error generating case:', err);
-                    }
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`✅ ${data.count || count} cas cliniques générés avec succès !`);
+                    loadContent();
+                    loadDashboard();
+                } else {
+                    alert('❌ ' + (data.error || 'Erreur lors de la génération'));
+                    loadContent();
                 }
-                
-                alert(`✅ ${successCount}/${count} cas cliniques générés avec succès !`);
-                loadContent();
-                loadDashboard();
             } catch (error) {
                 alert('❌ Erreur: ' + error.message);
                 loadContent();

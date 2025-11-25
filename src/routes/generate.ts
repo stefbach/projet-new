@@ -85,11 +85,19 @@ generate.post('/qcm', async (c) => {
  */
 generate.post('/clinical-case', async (c) => {
   try {
-    const { specialty, complexity, patient_profile }: GenerateClinicalCaseRequest = await c.req.json()
+    const body = await c.req.json()
+    const specialty = body.specialty
+    const complexity = body.complexity
+    const count = body.count || 1
+    const patient_profile = body.patient_profile
 
     // Validation
     if (!specialty || !complexity) {
       return c.json({ error: 'Missing required fields: specialty, complexity' }, 400)
+    }
+
+    if (count < 1 || count > 30) {
+      return c.json({ error: 'Count must be between 1 and 30' }, 400)
     }
 
     // Récupérer la clé API depuis la base de données
@@ -105,35 +113,38 @@ generate.post('/clinical-case', async (c) => {
       }, 400)
     }
 
-    // Génération via OpenAI
+    // Génération via OpenAI (maintenant génère plusieurs cas)
     const openai = new OpenAIService(apiKey)
-    const clinicalCase = await openai.generateClinicalCase(specialty, complexity, patient_profile)
+    const clinicalCases = await openai.generateClinicalCase(specialty, complexity, count, patient_profile)
 
-    // Sauvegarde en base de données
-    await c.env.DB.prepare(`
-      INSERT INTO clinical_cases (id, specialty, complexity, title, patient_profile, presentation, anamnesis, questions, red_flags, diagnosis, management, prescription, source, used_count, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      clinicalCase.id,
-      clinicalCase.specialty,
-      clinicalCase.complexity,
-      clinicalCase.title,
-      JSON.stringify(clinicalCase.patient_profile),
-      clinicalCase.presentation,
-      JSON.stringify(clinicalCase.anamnesis),
-      JSON.stringify(clinicalCase.questions),
-      JSON.stringify(clinicalCase.red_flags),
-      clinicalCase.diagnosis,
-      clinicalCase.management,
-      JSON.stringify(clinicalCase.prescription),
-      clinicalCase.source,
-      0,
-      clinicalCase.created_at
-    ).run()
+    // Sauvegarde en base de données (batch)
+    for (const clinicalCase of clinicalCases) {
+      await c.env.DB.prepare(`
+        INSERT INTO clinical_cases (id, specialty, complexity, title, patient_profile, presentation, anamnesis, questions, red_flags, diagnosis, management, prescription, source, used_count, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        clinicalCase.id,
+        clinicalCase.specialty,
+        clinicalCase.complexity,
+        clinicalCase.title,
+        JSON.stringify(clinicalCase.patient_profile),
+        clinicalCase.presentation,
+        JSON.stringify(clinicalCase.anamnesis),
+        JSON.stringify(clinicalCase.questions),
+        JSON.stringify(clinicalCase.red_flags),
+        clinicalCase.diagnosis,
+        clinicalCase.management,
+        JSON.stringify(clinicalCase.prescription),
+        clinicalCase.source,
+        0,
+        clinicalCase.created_at
+      ).run()
+    }
 
     return c.json({
       success: true,
-      clinical_case: clinicalCase
+      count: clinicalCases.length,
+      clinical_cases: clinicalCases
     })
   } catch (error: any) {
     console.error('Clinical Case Generation Error:', error)

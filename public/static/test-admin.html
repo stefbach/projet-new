@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-8">
+        <h1 class="text-3xl font-bold mb-6">Test Dashboard Admin</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <button onclick="testHealth()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Test API Health
+                </button>
+                <pre id="result-health" class="mt-2 bg-gray-800 text-green-400 p-4 rounded text-sm"></pre>
+            </div>
+
+            <div>
+                <button onclick="testStats()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    Test Admin Stats
+                </button>
+                <pre id="result-stats" class="mt-2 bg-gray-800 text-green-400 p-4 rounded text-sm"></pre>
+            </div>
+
+            <div>
+                <button onclick="testDoctors()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                    Test List Doctors
+                </button>
+                <pre id="result-doctors" class="mt-2 bg-gray-800 text-green-400 p-4 rounded text-sm"></pre>
+            </div>
+
+            <div>
+                <button onclick="testQCM()" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                    Test Random QCM
+                </button>
+                <pre id="result-qcm" class="mt-2 bg-gray-800 text-green-400 p-4 rounded text-sm"></pre>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold mb-4">Statistiques Live</h2>
+            <div id="live-stats" class="grid grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testHealth() {
+            try {
+                const response = await fetch('/api/health')
+                const data = await response.json()
+                document.getElementById('result-health').textContent = JSON.stringify(data, null, 2)
+            } catch (error) {
+                document.getElementById('result-health').textContent = 'Error: ' + error.message
+            }
+        }
+
+        async function testStats() {
+            try {
+                const response = await fetch('/api/admin/stats')
+                const data = await response.json()
+                document.getElementById('result-stats').textContent = JSON.stringify(data, null, 2)
+                
+                // Update live stats
+                if (data.success) {
+                    const liveDiv = document.getElementById('live-stats')
+                    liveDiv.innerHTML = `
+                        <div class="bg-blue-50 p-4 rounded">
+                            <div class="text-3xl font-bold text-blue-600">${data.stats.total_doctors}</div>
+                            <div class="text-sm text-gray-600">Médecins</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded">
+                            <div class="text-3xl font-bold text-green-600">${data.stats.content.total_qcm}</div>
+                            <div class="text-sm text-gray-600">QCM</div>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded">
+                            <div class="text-3xl font-bold text-purple-600">${data.stats.content.total_cases}</div>
+                            <div class="text-sm text-gray-600">Cas Cliniques</div>
+                        </div>
+                    `
+                }
+            } catch (error) {
+                document.getElementById('result-stats').textContent = 'Error: ' + error.message
+            }
+        }
+
+        async function testDoctors() {
+            try {
+                const response = await fetch('/api/admin/doctors?limit=10')
+                const data = await response.json()
+                document.getElementById('result-doctors').textContent = JSON.stringify(data, null, 2)
+            } catch (error) {
+                document.getElementById('result-doctors').textContent = 'Error: ' + error.message
+            }
+        }
+
+        async function testQCM() {
+            try {
+                const response = await fetch('/api/generate/qcm/random?count=2')
+                const data = await response.json()
+                document.getElementById('result-qcm').textContent = JSON.stringify(data, null, 2)
+            } catch (error) {
+                document.getElementById('result-qcm').textContent = 'Error: ' + error.message
+            }
+        }
+
+        // Auto-load stats on page load
+        window.onload = function() {
+            testStats()
+        }
+    </script>
+</body>
+</html>

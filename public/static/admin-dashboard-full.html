@@ -970,11 +970,11 @@
                         <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                             <div class="flex justify-between items-start">
                                 <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-900">${qcm.theme}</h4>
-                                    <p class="text-sm text-gray-600 mt-1">${qcm.question.substring(0, 100)}...</p>
+                                    <h4 class="font-semibold text-gray-900">${qcm.topic || qcm.theme}</h4>
+                                    <p class="text-sm text-gray-600 mt-1">${qcm.question.substring(0, 100)}${qcm.question.length > 100 ? '...' : ''}</p>
                                     <div class="mt-2 flex items-center space-x-3 text-xs text-gray-500">
                                         <span><i class="fas fa-tag mr-1"></i>${qcm.difficulty || 'N/A'}</span>
-                                        <span><i class="fas fa-book mr-1"></i>${qcm.source}</span>
+                                        <span><i class="fas fa-book mr-1"></i>${qcm.source || 'OMS'}</span>
                                     </div>
                                 </div>
                                 <button onclick="viewQCM('${qcm.id}')" class="ml-4 text-blue-600 hover:text-blue-800">
@@ -997,11 +997,12 @@
                         <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                             <div class="flex justify-between items-start">
                                 <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-900">${clinicalCase.specialty}</h4>
-                                    <p class="text-sm text-gray-600 mt-1">${clinicalCase.patient_presentation.substring(0, 150)}...</p>
+                                    <h4 class="font-semibold text-gray-900">${clinicalCase.title || clinicalCase.specialty}</h4>
+                                    <p class="text-sm text-gray-600 mt-1">${(clinicalCase.presentation || '').substring(0, 150)}${clinicalCase.presentation && clinicalCase.presentation.length > 150 ? '...' : ''}</p>
                                     <div class="mt-2 flex items-center space-x-3 text-xs text-gray-500">
-                                        <span><i class="fas fa-user mr-1"></i>Âge: ${clinicalCase.age || 'N/A'}</span>
-                                        <span><i class="fas fa-venus-mars mr-1"></i>${clinicalCase.gender || 'N/A'}</span>
+                                        <span><i class="fas fa-hospital mr-1"></i>${clinicalCase.specialty}</span>
+                                        <span><i class="fas fa-layer-group mr-1"></i>${clinicalCase.complexity}</span>
+                                        ${clinicalCase.patient_profile && clinicalCase.patient_profile.age ? `<span><i class="fas fa-user mr-1"></i>${clinicalCase.patient_profile.age} ans</span>` : ''}
                                     </div>
                                 </div>
                                 <button onclick="viewCase('${clinicalCase.id}')" class="ml-4 text-purple-600 hover:text-purple-800">

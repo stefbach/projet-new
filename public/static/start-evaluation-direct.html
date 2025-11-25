@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Démarrage Évaluation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+            <div class="mb-6">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">Préparation de l'évaluation...</h1>
+                <p class="text-gray-600" id="status">Vérification du token...</p>
+            </div>
+            <div id="error" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg text-left">
+                <p class="text-sm text-red-800 font-semibold mb-2">❌ Erreur</p>
+                <pre class="text-xs text-red-600 overflow-auto"></pre>
+            </div>
+        </div>
+    </div>
+
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+
+    <script>
+        const API_BASE = '/api';
+        
+        async function init() {
+            const statusEl = document.getElementById('status');
+            const errorEl = document.getElementById('error');
+            
+            try {
+                // Check token
+                let token = localStorage.getItem('doctor_token');
+                
+                if (!token) {
+                    statusEl.textContent = 'Connexion automatique...';
+                    
+                    // Auto login
+                    const loginResp = await fetch(`${API_BASE}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: 'dr.jean.martin@tibok.mu',
+                            password: 'password123'
+                        })
+                    });
+                    
+                    const loginData = await loginResp.json();
+                    
+                    if (!loginData.success) {
+                        throw new Error('Échec de connexion: ' + (loginData.error || 'Erreur inconnue'));
+                    }
+                    
+                    token = loginData.token;
+                    localStorage.setItem('doctor_token', token);
+                }
+                
+                // Start evaluation
+                statusEl.textContent = 'Chargement de l\'évaluation...';
+                
+                const response = await fetch(`${API_BASE}/evaluations/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        template_id: 'eval-test-001'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Impossible de charger l\'évaluation');
+                }
+                
+                // Store evaluation data
+                sessionStorage.setItem('current_evaluation', JSON.stringify(data.evaluation));
+                
+                // Redirect to take evaluation page
+                statusEl.textContent = '✅ Évaluation prête ! Redirection...';
+                
+                setTimeout(() => {
+                    window.location.href = '/static/take-evaluation-simple.html';
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                errorEl.classList.remove('hidden');
+                errorEl.querySelector('pre').textContent = error.message + '\n\n' + (error.stack || '');
+                statusEl.textContent = 'Erreur lors du chargement';
+            }
+        }
+        
+        // Start automatically
+        init();
+    </script>
+</body>
+</html>

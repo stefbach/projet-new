@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passer l'évaluation - Tibok</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-blue-600" id="eval-title">Évaluation en cours</h1>
+                <p class="text-sm text-gray-600">Question <span id="current-q">1</span> sur <span id="total-q">0</span></p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="timer" class="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg font-bold">
+                    <i class="fas fa-clock mr-2"></i><span id="time">00:00</span>
+                </div>
+                <button onclick="quitEval()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <i class="fas fa-times mr-2"></i>Quitter
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Progress -->
+    <div class="w-full bg-gray-200 h-2">
+        <div id="progress" class="bg-blue-600 h-2 transition-all" style="width: 0%"></div>
+    </div>
+
+    <!-- Content -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div id="question-container" class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-5xl text-blue-600 mb-4"></i>
+                <p>Chargement...</p>
+            </div>
+        </div>
+
+        <div id="nav" class="flex justify-between" style="display:none;">
+            <button onclick="prev()" id="prev-btn" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                <i class="fas fa-arrow-left mr-2"></i>Précédent
+            </button>
+            <button onclick="next()" id="next-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Suivant<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+            <button onclick="submit()" id="submit-btn" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700" style="display:none;">
+                <i class="fas fa-check mr-2"></i>Soumettre
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let evalData = null;
+        let currentIndex = 0;
+        let answers = {};
+        let allQuestions = [];
+        let startTime = Date.now();
+        let timerInterval = null;
+
+        function init() {
+            // Load from sessionStorage
+            const stored = sessionStorage.getItem('current_evaluation');
+            if (!stored) {
+                alert('❌ Aucune évaluation en cours');
+                window.location.href = '/static/doctor-dashboard.html';
+                return;
+            }
+
+            evalData = JSON.parse(stored);
+            document.getElementById('eval-title').textContent = evalData.name;
+
+            // Build questions array (QCMs first, then cases)
+            allQuestions = [
+                ...evalData.qcms.map(q => ({ type: 'qcm', data: q })),
+                ...evalData.cases.map(c => ({ type: 'case', data: c }))
+            ];
+
+            document.getElementById('total-q').textContent = allQuestions.length;
+            document.getElementById('nav').style.display = 'flex';
+
+            startTimer();
+            displayQuestion();
+        }
+
+        function startTimer() {
+            const duration = (evalData.duration_minutes || 60) * 60;
+            
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const remaining = duration - elapsed;
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    alert('⏰ Temps écoulé !');
+                    submit();
+                    return;
+                }
+
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                document.getElementById('time').textContent = 
+                    `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+                if (remaining === 300) {
+                    document.getElementById('timer').classList.remove('bg-blue-100','text-blue-800');
+                    document.getElementById('timer').classList.add('bg-red-100','text-red-800');
+                }
+            }, 1000);
+        }
+
+        function displayQuestion() {
+            const q = allQuestions[currentIndex];
+            const container = document.getElementById('question-container');
+            
+            document.getElementById('current-q').textContent = currentIndex + 1;
+            const progress = ((currentIndex + 1) / allQuestions.length) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+
+            if (q.type === 'qcm') {
+                const qcm = q.data;
+                const saved = answers[`qcm_${qcm.id}`];
+                
+                container.innerHTML = `
+                    <div class="mb-4">
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                            <i class="fas fa-question-circle mr-1"></i>QCM
+                        </span>
+                        <span class="ml-2 text-sm text-gray-600">${qcm.topic} - ${qcm.difficulty}</span>
+                    </div>
+                    <h2 class="text-xl font-bold mb-6">${qcm.question}</h2>
+                    <div class="space-y-3">
+                        ${Object.entries(qcm.options).map(([key, val]) => `
+                            <label class="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:border-blue-400 ${saved === key ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}">
+                                <input type="radio" name="answer" value="${key}" ${saved === key ? 'checked' : ''}
+                                    onchange="saveAnswer('qcm_${qcm.id}', '${key}')" class="mt-1 mr-3">
+                                <span><strong class="text-blue-600">${key}.</strong> ${val}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                const c = q.data;
+                container.innerHTML = `
+                    <div class="mb-4">
+                        <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
+                            <i class="fas fa-user-injured mr-1"></i>Cas Clinique
+                        </span>
+                        <span class="ml-2 text-sm text-gray-600">${c.specialty}</span>
+                    </div>
+                    <h2 class="text-xl font-bold mb-4">${c.title}</h2>
+                    <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-6">
+                        <p class="text-sm">${c.presentation}</p>
+                    </div>
+                    ${c.anamnesis && c.anamnesis.length > 0 ? `
+                        <div class="mb-6">
+                            <h3 class="font-bold mb-2">Anamnèse:</h3>
+                            <ul class="list-disc list-inside space-y-1">
+                                ${c.anamnesis.map(item => `<li class="text-sm">${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    ${c.questions && c.questions.length > 0 ? c.questions.map((sq, idx) => {
+                        const saved = answers[`case_${c.id}_q${idx}`];
+                        return `
+                            <div class="border-t pt-6 mt-6">
+                                <h3 class="font-bold mb-4">Question ${idx+1}: ${sq.q}</h3>
+                                <div class="space-y-2">
+                                    ${Object.entries(sq.options).map(([key, val]) => `
+                                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:border-purple-400 ${saved === key ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}">
+                                            <input type="radio" name="case_q${idx}" value="${key}" ${saved === key ? 'checked' : ''}
+                                                onchange="saveAnswer('case_${c.id}_q${idx}', '${key}')" class="mt-1 mr-3">
+                                            <span><strong class="text-purple-600">${key}.</strong> ${val}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('') : ''}
+                `;
+            }
+
+            updateNav();
+        }
+
+        function saveAnswer(qId, ans) {
+            answers[qId] = ans;
+        }
+
+        function updateNav() {
+            document.getElementById('prev-btn').disabled = currentIndex === 0;
+            
+            if (currentIndex === allQuestions.length - 1) {
+                document.getElementById('next-btn').style.display = 'none';
+                document.getElementById('submit-btn').style.display = 'block';
+            } else {
+                document.getElementById('next-btn').style.display = 'block';
+                document.getElementById('submit-btn').style.display = 'none';
+            }
+        }
+
+        function prev() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                displayQuestion();
+            }
+        }
+
+        function next() {
+            if (currentIndex < allQuestions.length - 1) {
+                currentIndex++;
+                displayQuestion();
+            }
+        }
+
+        function submit() {
+            if (!confirm('⚠️ Soumettre l\'évaluation ? Vous ne pourrez plus modifier.')) return;
+            
+            clearInterval(timerInterval);
+            
+            alert('✅ Évaluation soumise ! (Score fictif pour démo)');
+            window.location.href = '/static/doctor-dashboard.html';
+        }
+
+        function quitEval() {
+            if (confirm('⚠️ Quitter sans sauvegarder ?')) {
+                clearInterval(timerInterval);
+                window.location.href = '/static/doctor-dashboard.html';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -48,8 +48,11 @@
                 <button onclick="showTab('content')" class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600" data-tab="content">
                     <i class="fas fa-book mr-2"></i>Contenu
                 </button>
+                <button onclick="showTab('evaluations-setup')" class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600" data-tab="evaluations-setup">
+                    <i class="fas fa-clipboard-list mr-2"></i>Créer Évaluation
+                </button>
                 <button onclick="showTab('evaluations')" class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600" data-tab="evaluations">
-                    <i class="fas fa-clipboard-check mr-2"></i>Évaluations
+                    <i class="fas fa-clipboard-check mr-2"></i>Résultats
                 </button>
                 <button onclick="showTab('config')" class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600" data-tab="config">
                     <i class="fas fa-cog mr-2"></i>Configuration
@@ -221,6 +224,22 @@
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-lg font-semibold mb-4">Liste des Cas Cliniques</h3>
                 <div id="case-list" class="space-y-3">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Evaluations Setup -->
+        <div id="tab-evaluations-setup" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">📋 Gestion des Évaluations</h2>
+                    <button onclick="showCreateEvaluationModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                        <i class="fas fa-plus mr-2"></i>Nouvelle Évaluation
+                    </button>
+                </div>
+                
+                <div id="evaluations-list" class="space-y-4">
                     <!-- Populated by JS -->
                 </div>
             </div>
@@ -410,6 +429,84 @@
         </div>
     </div>
 
+    <!-- Modal: Create Evaluation -->
+    <div id="create-evaluation-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-4xl w-full mx-4 my-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">✨ Créer une Évaluation</h3>
+                <button onclick="hideCreateEvaluationModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form onsubmit="createEvaluation(event)">
+                <!-- Étape 1: Informations de base -->
+                <div class="mb-8">
+                    <h4 class="text-lg font-semibold mb-4 text-blue-600">1. Informations de base</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nom de l'évaluation *</label>
+                            <input type="text" id="eval-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: Évaluation TIBOK - Médecine Générale 2025">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea id="eval-description" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Description de l'évaluation (optionnel)"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Durée (minutes)</label>
+                            <input type="number" id="eval-duration" value="60" min="10" max="180" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Score minimum (%)</label>
+                            <input type="number" id="eval-passing-score" value="75" min="0" max="100" step="0.1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Étape 2: Sélection des QCM -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-semibold text-green-600">2. Sélectionner les QCM</h4>
+                        <button type="button" onclick="loadAvailableQCM()" class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm">
+                            <i class="fas fa-sync mr-1"></i>Actualiser
+                        </button>
+                    </div>
+                    <div id="qcm-selection-list" class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                        <p class="text-gray-500 text-center py-8">Chargement des QCM...</p>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">
+                        <span id="selected-qcm-count" class="font-semibold">0</span> QCM sélectionné(s)
+                    </p>
+                </div>
+
+                <!-- Étape 3: Sélection des cas cliniques -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-semibold text-purple-600">3. Sélectionner les Cas Cliniques</h4>
+                        <button type="button" onclick="loadAvailableCases()" class="px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 text-sm">
+                            <i class="fas fa-sync mr-1"></i>Actualiser
+                        </button>
+                    </div>
+                    <div id="cases-selection-list" class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                        <p class="text-gray-500 text-center py-8">Chargement des cas cliniques...</p>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">
+                        <span id="selected-cases-count" class="font-semibold">0</span> cas clinique(s) sélectionné(s)
+                    </p>
+                </div>
+
+                <div class="flex justify-between items-center pt-6 border-t">
+                    <button type="button" onclick="hideCreateEvaluationModal()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        Annuler
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-check mr-2"></i>Créer l'Évaluation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal: Create Doctor -->
     <div id="create-doctor-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
@@ -496,6 +593,8 @@
                 loadRanking();
             } else if (tabName === 'content') {
                 loadContent();
+            } else if (tabName === 'evaluations-setup') {
+                loadEvaluationsSetup();
             } else if (tabName === 'evaluations') {
                 loadEvaluations();
             } else if (tabName === 'config') {
@@ -1067,6 +1166,247 @@
 
         function viewCase(caseId) {
             window.open(`/static/case-detail.html?id=${caseId}`, '_blank');
+        }
+
+        // Evaluations Setup Functions
+        let selectedQCMs = [];
+        let selectedCases = [];
+
+        async function loadEvaluationsSetup() {
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/templates`);
+                const data = await response.json();
+                
+                if (!data.success) return;
+                
+                const listDiv = document.getElementById('evaluations-list');
+                
+                if (!data.templates || data.templates.length === 0) {
+                    listDiv.innerHTML = `
+                        <div class="text-center py-12 bg-gray-50 rounded-lg">
+                            <i class="fas fa-clipboard-list text-5xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-600 mb-4">Aucune évaluation créée</p>
+                            <button onclick="showCreateEvaluationModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-plus mr-2"></i>Créer votre première évaluation
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                listDiv.innerHTML = data.templates.map(template => `
+                    <div class="border border-gray-200 rounded-lg p-6 hover:bg-gray-50">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h3 class="text-xl font-bold text-gray-900">${template.name}</h3>
+                                    <span class="px-3 py-1 ${template.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} rounded-full text-xs font-semibold">
+                                        ${template.is_active ? '✅ Active' : '⏸️ Inactive'}
+                                    </span>
+                                </div>
+                                ${template.description ? `<p class="text-gray-600 mb-3">${template.description}</p>` : ''}
+                                <div class="flex items-center space-x-6 text-sm text-gray-600">
+                                    <span><i class="fas fa-clock mr-1"></i>${template.duration_minutes} min</span>
+                                    <span><i class="fas fa-percentage mr-1"></i>Score min: ${template.passing_score}%</span>
+                                    <span><i class="fas fa-question-circle mr-1 text-green-600"></i>${template.qcm_count} QCM</span>
+                                    <span><i class="fas fa-file-medical mr-1 text-purple-600"></i>${template.case_count} Cas</span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2 ml-4">
+                                <button onclick="viewEvaluation('${template.id}')" class="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded" title="Voir">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="toggleEvaluation('${template.id}', ${template.is_active ? 0 : 1})" class="px-3 py-2 text-yellow-600 hover:bg-yellow-50 rounded" title="${template.is_active ? 'Désactiver' : 'Activer'}">
+                                    <i class="fas fa-power-off"></i>
+                                </button>
+                                <button onclick="deleteEvaluation('${template.id}', '${template.name}')" class="px-3 py-2 text-red-600 hover:bg-red-50 rounded" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load evaluations:', error);
+            }
+        }
+
+        function showCreateEvaluationModal() {
+            selectedQCMs = [];
+            selectedCases = [];
+            document.getElementById('create-evaluation-modal').classList.remove('hidden');
+            document.getElementById('create-evaluation-modal').classList.add('flex');
+            loadAvailableQCM();
+            loadAvailableCases();
+        }
+
+        function hideCreateEvaluationModal() {
+            document.getElementById('create-evaluation-modal').classList.add('hidden');
+            document.getElementById('create-evaluation-modal').classList.remove('flex');
+        }
+
+        async function loadAvailableQCM() {
+            try {
+                const response = await fetch(`${API_BASE}/generate/qcm/random?count=50`);
+                const data = await response.json();
+                
+                const listDiv = document.getElementById('qcm-selection-list');
+                
+                if (!data.qcms || data.qcms.length === 0) {
+                    listDiv.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun QCM disponible. Générez-en d\'abord !</p>';
+                    return;
+                }
+                
+                listDiv.innerHTML = data.qcms.map(qcm => `
+                    <label class="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="${qcm.id}" onchange="updateSelectedQCM(this)" class="mt-1 mr-3">
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-900">${qcm.theme || qcm.topic}</div>
+                            <div class="text-sm text-gray-600">${qcm.question.substring(0, 100)}...</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                <span class="mr-3">${qcm.difficulty || 'N/A'}</span>
+                                <span>${qcm.source}</span>
+                            </div>
+                        </div>
+                    </label>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load QCM:', error);
+            }
+        }
+
+        async function loadAvailableCases() {
+            try {
+                const response = await fetch(`${API_BASE}/generate/clinical-case/random?count=20`);
+                const data = await response.json();
+                
+                const listDiv = document.getElementById('cases-selection-list');
+                
+                if (!data.cases || data.cases.length === 0) {
+                    listDiv.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun cas clinique disponible. Générez-en d\'abord !</p>';
+                    return;
+                }
+                
+                listDiv.innerHTML = data.cases.map(clinicalCase => `
+                    <label class="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="${clinicalCase.id}" onchange="updateSelectedCases(this)" class="mt-1 mr-3">
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-900">${clinicalCase.title || clinicalCase.specialty}</div>
+                            <div class="text-sm text-gray-600">${clinicalCase.presentation.substring(0, 100)}...</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                <span class="mr-3">${clinicalCase.specialty}</span>
+                                <span>${clinicalCase.complexity || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </label>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load cases:', error);
+            }
+        }
+
+        function updateSelectedQCM(checkbox) {
+            if (checkbox.checked) {
+                selectedQCMs.push(checkbox.value);
+            } else {
+                selectedQCMs = selectedQCMs.filter(id => id !== checkbox.value);
+            }
+            document.getElementById('selected-qcm-count').textContent = selectedQCMs.length;
+        }
+
+        function updateSelectedCases(checkbox) {
+            if (checkbox.checked) {
+                selectedCases.push(checkbox.value);
+            } else {
+                selectedCases = selectedCases.filter(id => id !== checkbox.value);
+            }
+            document.getElementById('selected-cases-count').textContent = selectedCases.length;
+        }
+
+        async function createEvaluation(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('eval-name').value;
+            const description = document.getElementById('eval-description').value;
+            const duration_minutes = parseInt(document.getElementById('eval-duration').value);
+            const passing_score = parseFloat(document.getElementById('eval-passing-score').value);
+            
+            if (selectedQCMs.length === 0 && selectedCases.length === 0) {
+                alert('❌ Vous devez sélectionner au moins un QCM ou un cas clinique');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/templates`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        description,
+                        duration_minutes,
+                        passing_score,
+                        qcm_ids: selectedQCMs,
+                        case_ids: selectedCases
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Évaluation créée avec succès !');
+                    hideCreateEvaluationModal();
+                    loadEvaluationsSetup();
+                } else {
+                    alert('❌ ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Erreur: ' + error.message);
+            }
+        }
+
+        async function toggleEvaluation(templateId, newStatus) {
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/templates/${templateId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_active: newStatus })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadEvaluationsSetup();
+                } else {
+                    alert('❌ ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Erreur: ' + error.message);
+            }
+        }
+
+        async function deleteEvaluation(templateId, templateName) {
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer l'évaluation "${templateName}" ?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/templates/${templateId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Évaluation supprimée');
+                    loadEvaluationsSetup();
+                } else {
+                    alert('❌ ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Erreur: ' + error.message);
+            }
+        }
+
+        function viewEvaluation(templateId) {
+            alert('Vue détaillée de l\'évaluation: ' + templateId + '\n(Fonctionnalité à venir)');
         }
 
         // Helper Functions

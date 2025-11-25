@@ -13,6 +13,7 @@ import sessionsRoutes from './routes/sessions'
 import generateRoutes from './routes/generate'
 import evaluateRoutes from './routes/evaluate'
 import adminRoutes from './routes/admin'
+import evaluationsRoutes from './routes/evaluations'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -29,6 +30,7 @@ app.route('/api/sessions', sessionsRoutes)
 app.route('/api/generate', generateRoutes)
 app.route('/api/evaluate', evaluateRoutes)
 app.route('/api/admin', adminRoutes)
+app.route('/api/evaluations', evaluationsRoutes)
 
 // Health check
 app.get('/api/health', (c) => {

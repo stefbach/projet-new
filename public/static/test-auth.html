@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Authentication</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-8">
+        <h1 class="text-2xl font-bold mb-6">🔍 Test Authentication</h1>
+        
+        <div class="space-y-4">
+            <div class="p-4 bg-gray-50 rounded">
+                <h2 class="font-bold mb-2">1. Login Test</h2>
+                <button onclick="testLogin()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Test Login API
+                </button>
+                <pre id="login-result" class="mt-2 text-sm bg-gray-800 text-green-400 p-2 rounded overflow-auto"></pre>
+            </div>
+
+            <div class="p-4 bg-gray-50 rounded">
+                <h2 class="font-bold mb-2">2. LocalStorage Check</h2>
+                <button onclick="checkStorage()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                    Check LocalStorage
+                </button>
+                <pre id="storage-result" class="mt-2 text-sm bg-gray-800 text-green-400 p-2 rounded overflow-auto"></pre>
+            </div>
+
+            <div class="p-4 bg-gray-50 rounded">
+                <h2 class="font-bold mb-2">3. API /doctors/me Test</h2>
+                <button onclick="testDoctorsMe()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    Test /api/doctors/me
+                </button>
+                <pre id="api-result" class="mt-2 text-sm bg-gray-800 text-green-400 p-2 rounded overflow-auto"></pre>
+            </div>
+
+            <div class="p-4 bg-gray-50 rounded">
+                <h2 class="font-bold mb-2">4. Full Flow Test</h2>
+                <button onclick="testFullFlow()" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                    Test Login → Storage → API
+                </button>
+                <pre id="flow-result" class="mt-2 text-sm bg-gray-800 text-green-400 p-2 rounded overflow-auto"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            result.textContent = 'Testing login...';
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'dr.jean.martin@tibok.mu',
+                        password: 'password123'
+                    })
+                });
+
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+
+                if (data.success && data.token) {
+                    localStorage.setItem('doctor_token', data.token);
+                    result.textContent += '\n\n✅ Token stored in localStorage as doctor_token';
+                }
+            } catch (error) {
+                result.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        function checkStorage() {
+            const result = document.getElementById('storage-result');
+            const doctorToken = localStorage.getItem('doctor_token');
+            const tibokToken = localStorage.getItem('tibok_token');
+            const tibokUser = localStorage.getItem('tibok_user');
+
+            result.textContent = `doctor_token: ${doctorToken ? doctorToken.substring(0, 50) + '...' : 'NOT FOUND'}\n\n`;
+            result.textContent += `tibok_token: ${tibokToken ? tibokToken.substring(0, 50) + '...' : 'NOT FOUND'}\n\n`;
+            result.textContent += `tibok_user: ${tibokUser || 'NOT FOUND'}`;
+        }
+
+        async function testDoctorsMe() {
+            const result = document.getElementById('api-result');
+            const token = localStorage.getItem('doctor_token');
+
+            if (!token) {
+                result.textContent = '❌ No doctor_token found in localStorage. Run Test 1 first.';
+                return;
+            }
+
+            result.textContent = 'Testing /api/doctors/me...';
+
+            try {
+                const response = await fetch(`${API_BASE}/doctors/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                result.textContent = `Status: ${response.status}\n\n`;
+                result.textContent += JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        async function testFullFlow() {
+            const result = document.getElementById('flow-result');
+            result.textContent = 'Step 1: Login...\n';
+
+            try {
+                // Step 1: Login
+                const loginResp = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'dr.jean.martin@tibok.mu',
+                        password: 'password123'
+                    })
+                });
+
+                const loginData = await loginResp.json();
+                
+                if (!loginData.success) {
+                    result.textContent += `❌ Login failed: ${loginData.error}`;
+                    return;
+                }
+
+                result.textContent += `✅ Login successful\n`;
+                result.textContent += `Token: ${loginData.token.substring(0, 30)}...\n\n`;
+
+                // Step 2: Store token
+                localStorage.setItem('doctor_token', loginData.token);
+                result.textContent += 'Step 2: Token stored in localStorage\n\n';
+
+                // Step 3: Test API
+                result.textContent += 'Step 3: Testing /api/doctors/me...\n';
+                const apiResp = await fetch(`${API_BASE}/doctors/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${loginData.token}`
+                    }
+                });
+
+                const apiData = await apiResp.json();
+                result.textContent += `Status: ${apiResp.status}\n`;
+                result.textContent += JSON.stringify(apiData, null, 2);
+
+                if (apiData.success) {
+                    result.textContent += '\n\n✅ FULL FLOW SUCCESS! You can now access doctor-dashboard.html';
+                } else {
+                    result.textContent += '\n\n❌ API call failed';
+                }
+
+            } catch (error) {
+                result.textContent += `\n\n❌ Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

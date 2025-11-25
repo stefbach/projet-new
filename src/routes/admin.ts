@@ -327,18 +327,21 @@ admin.post('/doctor', async (c) => {
       return c.json({ error: 'Email already exists' }, 400)
     }
 
-    // Hash du mot de passe (simple pour l'exemple)
+    // Hash du mot de passe avec SHA-256
     const crypto = await import('crypto')
     const password_hash = crypto.createHash('sha256').update(password).digest('hex')
+    
+    // Générer un ID unique
+    const doctorId = `doc-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 
-    const result = await c.env.DB.prepare(`
-      INSERT INTO doctors (name, email, specialty, password_hash)
-      VALUES (?, ?, ?, ?)
-    `).bind(name, email, specialty, password_hash).run()
+    await c.env.DB.prepare(`
+      INSERT INTO doctors (id, name, email, specialty, password_hash, role, status, created_at)
+      VALUES (?, ?, ?, ?, ?, 'doctor', 'active', datetime('now'))
+    `).bind(doctorId, name, email, specialty, password_hash).run()
 
     return c.json({
       success: true,
-      doctor_id: result.meta.last_row_id,
+      doctor_id: doctorId,
       message: 'Doctor created successfully'
     })
   } catch (error: any) {

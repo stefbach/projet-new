@@ -385,7 +385,7 @@ evaluations.post('/start', async (c) => {
           ...c,
           patient_profile: c.patient_profile,
           presentation: c.presentation,
-          anamnesis: JSON.parse(c.anamnesis as string),
+          anamnesis: c.anamnesis,
           questions: JSON.parse(c.questions as string)
         }))
       }

@@ -9,17 +9,36 @@
     <meta http-equiv="Expires" content="0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --tibok-blue: #0066CC;
+            --tibok-cyan: #00BCD4;
+            --tibok-green: #00C853;
+        }
+        .bg-tibok-gradient {
+            background: linear-gradient(135deg, var(--tibok-blue) 0%, var(--tibok-cyan) 50%, var(--tibok-green) 100%);
+        }
+        .text-tibok-blue { color: var(--tibok-blue); }
+        .text-tibok-cyan { color: var(--tibok-cyan); }
+        .text-tibok-green { color: var(--tibok-green); }
+        .border-tibok-blue { border-color: var(--tibok-blue); }
+        .border-tibok-cyan { border-color: var(--tibok-cyan); }
+        .border-tibok-green { border-color: var(--tibok-green); }
+        .bg-tibok-blue { background-color: var(--tibok-blue); }
+        .bg-tibok-cyan { background-color: var(--tibok-cyan); }
+        .bg-tibok-green { background-color: var(--tibok-green); }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <!-- Header -->
-    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl">
+    <header class="bg-tibok-gradient text-white shadow-xl">
         <div class="container mx-auto px-6 py-5">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-4">
-                    <i class="fas fa-users-cog text-4xl"></i>
+                    <img src="/static/tibok-logo.svg" alt="TIBOK Logo" class="h-16" />
                     <div>
                         <h1 class="text-3xl font-bold">Gestion des Utilisateurs</h1>
-                        <p class="text-blue-200 text-sm">TIBOK Medical Evaluation System</p>
+                        <p class="text-cyan-100 text-sm">TIBOK Medical Evaluation System</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -34,26 +53,26 @@
     <div class="container mx-auto px-6 py-8">
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-tibok-blue">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-500 text-sm font-medium mb-1">Total Médecins</p>
-                        <p class="text-4xl font-bold text-blue-600" id="stat-total">0</p>
+                        <p class="text-4xl font-bold text-tibok-blue" id="stat-total">0</p>
                     </div>
-                    <div class="bg-blue-100 p-4 rounded-full">
-                        <i class="fas fa-users text-3xl text-blue-600"></i>
+                    <div class="bg-blue-50 p-4 rounded-full">
+                        <i class="fas fa-users text-3xl text-tibok-blue"></i>
                     </div>
                 </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-tibok-green">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-500 text-sm font-medium mb-1">Médecins Aptes</p>
-                        <p class="text-4xl font-bold text-green-600" id="stat-apte">0</p>
+                        <p class="text-4xl font-bold text-tibok-green" id="stat-apte">0</p>
                     </div>
-                    <div class="bg-green-100 p-4 rounded-full">
-                        <i class="fas fa-check-circle text-3xl text-green-600"></i>
+                    <div class="bg-green-50 p-4 rounded-full">
+                        <i class="fas fa-check-circle text-3xl text-tibok-green"></i>
                     </div>
                 </div>
             </div>
@@ -79,7 +98,7 @@
                     <h2 class="text-2xl font-bold text-gray-800">Liste des Médecins</h2>
                     <p class="text-gray-500 text-sm mt-1">Gérer les comptes utilisateurs du système</p>
                 </div>
-                <button onclick="showCreateModal()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-lg transform hover:scale-105 transition">
+                <button onclick="showCreateModal()" class="px-6 py-3 bg-tibok-gradient text-white rounded-lg hover:opacity-90 font-medium shadow-lg transform hover:scale-105 transition">
                     <i class="fas fa-plus mr-2"></i>Nouveau Médecin
                 </button>
             </div>

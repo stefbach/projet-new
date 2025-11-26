@@ -9,16 +9,29 @@
     <title>Dashboard Médecin - Tibok Medical Evaluation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --tibok-blue: #0066CC;
+            --tibok-cyan: #00BCD4;
+            --tibok-green: #00C853;
+        }
+        .bg-tibok-gradient {
+            background: linear-gradient(135deg, var(--tibok-blue) 0%, var(--tibok-cyan) 50%, var(--tibok-green) 100%);
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gradient-to-br from-blue-50 via-cyan-50 to-green-50">
     <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-10">
+    <header class="bg-white shadow-lg sticky top-0 z-10 border-b-4 bg-tibok-gradient border-transparent">
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold text-blue-600">
-                    <i class="fas fa-stethoscope mr-2"></i>Tibok Medical Evaluation
-                </h1>
-                <p class="text-sm text-gray-600" id="doctor-name">Chargement...</p>
+            <div class="flex items-center gap-4">
+                <img src="/static/tibok-logo.svg" alt="TIBOK Logo" class="h-12" />
+                <div>
+                    <h1 class="text-2xl font-bold text-white">
+                        Medical Evaluation
+                    </h1>
+                    <p class="text-sm text-cyan-100" id="doctor-name">Chargement...</p>
+                </div>
             </div>
             <button onclick="logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
                 <i class="fas fa-sign-out-alt mr-2"></i>Déconnexion

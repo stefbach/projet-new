@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" width="640" height="160">
+  <defs>
+    <linearGradient id="tibok-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0066CC;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00BCD4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00C853;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background (optional) -->
+  <!-- <rect width="640" height="160" fill="#ffffff"/> -->
+  
+  <!-- TIBOK Text with gradient -->
+  <text x="20" y="120" font-family="Arial, sans-serif" font-size="100" font-weight="bold" fill="url(#tibok-gradient)">TIBOK</text>
+  
+  <!-- Medical Icon in the 'O' -->
+  <g transform="translate(330, 50)">
+    <rect x="10" y="10" width="60" height="80" rx="8" fill="none" stroke="#00BCD4" stroke-width="4"/>
+    <circle cx="40" cy="35" r="10" fill="#00BCD4"/>
+    <path d="M 30 50 Q 40 45 50 50 L 50 75 Q 40 80 30 75 Z" fill="#00BCD4"/>
+    <line x1="35" y1="85" x2="35" y2="95" stroke="#00BCD4" stroke-width="3"/>
+    <line x1="45" y1="85" x2="45" y2="95" stroke="#00BCD4" stroke-width="3"/>
+  </g>
+</svg>

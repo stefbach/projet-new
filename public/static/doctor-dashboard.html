@@ -303,7 +303,8 @@
         }
 
         function startEvaluation(templateId) {
-            window.location.href = `/static/take-evaluation.html?template=${templateId}`;
+            // Use start-evaluation-direct.html which handles data transformation
+            window.location.href = `/static/start-evaluation-direct.html`;
         }
 
         function viewResults(evaluationId) {

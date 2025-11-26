@@ -119,7 +119,42 @@
 
         <!-- Tab: Doctors -->
         <div id="tab-doctors" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <!-- Nouvelle interface de redirection -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg p-12 text-center">
+                <div class="max-w-2xl mx-auto">
+                    <i class="fas fa-users-cog text-6xl text-blue-600 mb-6"></i>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Gestion des Utilisateurs</h2>
+                    <p class="text-gray-600 mb-8 text-lg">
+                        Une nouvelle interface complète et moderne pour gérer les comptes médecins
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <i class="fas fa-plus-circle text-3xl text-green-600 mb-2"></i>
+                            <p class="font-semibold">Créer</p>
+                            <p class="text-sm text-gray-500">Nouveaux médecins</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <i class="fas fa-edit text-3xl text-blue-600 mb-2"></i>
+                            <p class="font-semibold">Modifier</p>
+                            <p class="text-sm text-gray-500">Informations existantes</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <i class="fas fa-search text-3xl text-purple-600 mb-2"></i>
+                            <p class="font-semibold">Rechercher</p>
+                            <p class="text-sm text-gray-500">Filtrer et trier</p>
+                        </div>
+                    </div>
+                    
+                    <a href="/static/user-management.html" 
+                       class="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-lg font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-xl transform hover:scale-105 transition">
+                        <i class="fas fa-arrow-right mr-2"></i>Ouvrir la gestion des utilisateurs
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Ancienne interface (masquée) -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6 hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold">Gestion des Médecins</h2>
                     <button onclick="showCreateDoctorModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">

@@ -35,7 +35,9 @@ app.use('/static/*', async (c, next) => {
 })
 
 // Serve static files
-app.use('/static/*', serveStatic({ root: './public' }))
+// NOTE: For Cloudflare Pages, after build, files are in dist/static
+// So we need to serve from './' not './public'
+app.use('/static/*', serveStatic({ root: './' }))
 
 // API Routes
 app.route('/api/auth', authRoutes)

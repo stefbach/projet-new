@@ -171,17 +171,20 @@
                     <h2 class="text-xl font-bold text-gray-900 mb-6">${qcm.question}</h2>
 
                     <div class="space-y-3">
-                        ${Object.entries(JSON.parse(qcm.options)).map(([key, value]) => `
+                        ${(Array.isArray(qcm.options) ? qcm.options : JSON.parse(qcm.options)).map((option, idx) => {
+                            const key = String.fromCharCode(65 + idx); // A, B, C, D, E
+                            return `
                             <label class="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:border-blue-400 transition ${savedAnswer === key ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}">
                                 <input type="radio" name="answer" value="${key}" 
                                     ${savedAnswer === key ? 'checked' : ''}
                                     onchange="saveAnswer('qcm_${qcm.id}', '${key}')"
                                     class="mt-1 mr-3">
                                 <span class="flex-1">
-                                    <strong class="text-blue-600">${key}.</strong> ${value}
+                                    <strong class="text-blue-600">${key}.</strong> ${option.replace(/^[A-E]\)\s*/, '')}
                                 </span>
                             </label>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 `;
             } 
@@ -189,9 +192,8 @@
             else {
                 const caseIndex = currentQuestionIndex - evaluationData.qcms.length;
                 const clinicalCase = evaluationData.cases[caseIndex];
-                const caseData = typeof clinicalCase.presentation === 'string' 
-                    ? JSON.parse(clinicalCase.presentation) 
-                    : clinicalCase.presentation;
+                // clinicalCase already has all the data we need, no need to parse
+                const caseData = clinicalCase;
 
                 content.innerHTML = `
                     <div class="mb-4">
@@ -203,49 +205,48 @@
 
                     <h2 class="text-xl font-bold text-gray-900 mb-4">${clinicalCase.title}</h2>
 
-                    <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-6">
-                        <h3 class="font-bold text-blue-900 mb-2">
-                            <i class="fas fa-user mr-2"></i>Profil du patient
-                        </h3>
-                        <p class="text-sm text-gray-700">${caseData.patient_profile || 'Non spécifié'}</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-bold text-gray-900 mb-2">Présentation:</h3>
-                        <p class="text-gray-700">${caseData.presentation || clinicalCase.presentation}</p>
-                    </div>
-
-                    ${caseData.anamnesis ? `
-                        <div class="mb-6">
-                            <h3 class="font-bold text-gray-900 mb-2">Anamnèse:</h3>
-                            <ul class="list-disc list-inside text-gray-700 space-y-1">
-                                ${(Array.isArray(caseData.anamnesis) ? caseData.anamnesis : [caseData.anamnesis]).map(item => 
-                                    `<li>${item}</li>`
-                                ).join('')}
-                            </ul>
+                    ${clinicalCase.patient_profile ? `
+                        <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-6">
+                            <h3 class="font-bold text-blue-900 mb-2">
+                                <i class="fas fa-user mr-2"></i>Profil du patient
+                            </h3>
+                            <p class="text-sm text-gray-700">${typeof clinicalCase.patient_profile === 'string' ? clinicalCase.patient_profile : JSON.stringify(clinicalCase.patient_profile)}</p>
                         </div>
                     ` : ''}
 
-                    ${caseData.questions && caseData.questions.length > 0 ? `
+                    <div class="mb-6">
+                        <h3 class="font-bold text-gray-900 mb-2">Présentation:</h3>
+                        <p class="text-gray-700">${clinicalCase.presentation}</p>
+                    </div>
+
+                    ${clinicalCase.anamnesis ? `
+                        <div class="mb-6">
+                            <h3 class="font-bold text-gray-900 mb-2">Anamnèse:</h3>
+                            ${Array.isArray(clinicalCase.anamnesis) 
+                                ? `<ul class="list-disc list-inside text-gray-700 space-y-1">
+                                    ${clinicalCase.anamnesis.map(item => `<li>${item}</li>`).join('')}
+                                   </ul>`
+                                : `<p class="text-sm text-gray-700">${clinicalCase.anamnesis}</p>`
+                            }
+                        </div>
+                    ` : ''}
+
+                    ${clinicalCase.questions && clinicalCase.questions.length > 0 ? `
                         <div class="space-y-6">
-                            ${caseData.questions.map((q, idx) => {
+                            ${clinicalCase.questions.map((q, idx) => {
                                 const savedAnswer = answers[`case_${clinicalCase.id}_q${idx}`];
+                                const questionText = q.question || q.q || 'Question';
                                 return `
                                     <div class="border-t pt-6">
-                                        <h3 class="font-bold text-gray-900 mb-4">Question ${idx + 1}: ${q.q}</h3>
-                                        <div class="space-y-2">
-                                            ${Object.entries(q.options).map(([key, value]) => `
-                                                <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:border-purple-400 transition ${savedAnswer === key ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}">
-                                                    <input type="radio" name="case_q${idx}" value="${key}"
-                                                        ${savedAnswer === key ? 'checked' : ''}
-                                                        onchange="saveAnswer('case_${clinicalCase.id}_q${idx}', '${key}')"
-                                                        class="mt-1 mr-3">
-                                                    <span class="flex-1">
-                                                        <strong class="text-purple-600">${key}.</strong> ${value}
-                                                    </span>
-                                                </label>
-                                            `).join('')}
-                                        </div>
+                                        <h3 class="font-bold text-gray-900 mb-4">Question ${idx + 1}: ${questionText}</h3>
+                                        <textarea 
+                                            id="case_${clinicalCase.id}_q${idx}"
+                                            onchange="saveAnswer('case_${clinicalCase.id}_q${idx}', this.value)"
+                                            class="w-full p-3 border-2 rounded-lg focus:border-purple-600 focus:outline-none"
+                                            rows="4"
+                                            placeholder="Votre réponse..."
+                                        >${savedAnswer || ''}</textarea>
+                                        <p class="text-sm text-gray-600 mt-2">Points: ${q.points || 1}</p>
                                     </div>
                                 `;
                             }).join('')}

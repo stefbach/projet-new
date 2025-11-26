@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Test Gestion Médecins</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🧪 Test Gestion des Médecins</h1>
+        
+        <!-- Create Doctor Section -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">➕ Créer un nouveau médecin</h2>
+            <form id="create-doctor-form" class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Nom complet</label>
+                    <input type="text" id="name" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" id="email" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Spécialité</label>
+                    <select id="specialty" required class="w-full px-3 py-2 border rounded-lg">
+                        <option value="Médecine Générale">Médecine Générale</option>
+                        <option value="Pédiatrie">Pédiatrie</option>
+                        <option value="Cardiologie">Cardiologie</option>
+                        <option value="Dermatologie">Dermatologie</option>
+                        <option value="Endocrinologie">Endocrinologie</option>
+                        <option value="Pneumologie">Pneumologie</option>
+                        <option value="Gastroentérologie">Gastroentérologie</option>
+                        <option value="Psychiatrie">Psychiatrie</option>
+                        <option value="Urgences">Urgences</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Mot de passe initial</label>
+                    <input type="password" id="password" required minlength="8" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="col-span-2">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Créer le médecin
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Doctors List -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">📋 Liste des médecins</h2>
+                <button onclick="loadDoctors()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-sync mr-2"></i>Recharger
+                </button>
+            </div>
+            
+            <div id="doctors-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        // Load doctors on page load
+        document.addEventListener('DOMContentLoaded', loadDoctors);
+        
+        // Create doctor form submit
+        document.getElementById('create-doctor-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const specialty = document.getElementById('specialty').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctor`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, specialty, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Médecin créé avec succès !\nID: ' + data.doctor_id);
+                    document.getElementById('create-doctor-form').reset();
+                    loadDoctors();
+                } else {
+                    alert('❌ Erreur: ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Erreur réseau: ' + error.message);
+            }
+        });
+        
+        async function loadDoctors() {
+            const container = document.getElementById('doctors-container');
+            container.innerHTML = '<p class="text-center py-4">⏳ Chargement...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctors`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    container.innerHTML = '<p class="text-red-600">❌ Erreur de chargement</p>';
+                    return;
+                }
+                
+                if (data.doctors.length === 0) {
+                    container.innerHTML = '<p class="text-gray-600">Aucun médecin trouvé</p>';
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-medium">Nom</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium">Email</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium">Spécialité</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium">Score T-MCQ</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium">Statut</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            ${data.doctors.map(doctor => {
+                                const score = doctor.tmcq_total ? doctor.tmcq_total + '%' : 'N/A';
+                                const statusClass = {
+                                    'apte': 'bg-green-100 text-green-800',
+                                    'supervision_requise': 'bg-yellow-100 text-yellow-800',
+                                    'formation_requise': 'bg-red-100 text-red-800'
+                                }[doctor.evaluation_status] || 'bg-gray-100 text-gray-800';
+                                
+                                const statusLabel = doctor.evaluation_status || 'non_évalué';
+                                
+                                return `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-user-md text-blue-600 mr-2"></i>
+                                                <span class="font-medium">${doctor.name}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">${doctor.email}</td>
+                                        <td class="px-4 py-3 text-sm">${doctor.specialty || 'N/A'}</td>
+                                        <td class="px-4 py-3 text-sm font-semibold">${score}</td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-1 rounded text-xs font-semibold ${statusClass}">
+                                                ${statusLabel.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <button onclick="deleteDoctor('${doctor.id}', '${doctor.name}')" 
+                                                class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
+                                                <i class="fas fa-trash mr-1"></i>Supprimer
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                console.log('✅ Loaded', data.doctors.length, 'doctors');
+                
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+                container.innerHTML = '<p class="text-red-600">❌ Erreur réseau: ' + error.message + '</p>';
+            }
+        }
+        
+        async function deleteDoctor(doctorId, doctorName) {
+            if (!confirm(`⚠️ Êtes-vous sûr de vouloir supprimer "${doctorName}" ?\n\nCette action est irréversible.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctor/${doctorId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Médecin supprimé avec succès');
+                    loadDoctors();
+                } else {
+                    alert('❌ Erreur: ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Erreur réseau: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

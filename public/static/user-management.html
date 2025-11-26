@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIBOK - Gestion des Utilisateurs</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl">
+        <div class="container mx-auto px-6 py-5">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-users-cog text-4xl"></i>
+                    <div>
+                        <h1 class="text-3xl font-bold">Gestion des Utilisateurs</h1>
+                        <p class="text-blue-200 text-sm">TIBOK Medical Evaluation System</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/static/admin-dashboard-full.html" class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i>Retour au Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium mb-1">Total Médecins</p>
+                        <p class="text-4xl font-bold text-blue-600" id="stat-total">0</p>
+                    </div>
+                    <div class="bg-blue-100 p-4 rounded-full">
+                        <i class="fas fa-users text-3xl text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium mb-1">Médecins Aptes</p>
+                        <p class="text-4xl font-bold text-green-600" id="stat-apte">0</p>
+                    </div>
+                    <div class="bg-green-100 p-4 rounded-full">
+                        <i class="fas fa-check-circle text-3xl text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium mb-1">Formation Requise</p>
+                        <p class="text-4xl font-bold text-red-600" id="stat-formation">0</p>
+                    </div>
+                    <div class="bg-red-100 p-4 rounded-full">
+                        <i class="fas fa-exclamation-triangle text-3xl text-red-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white rounded-xl shadow-xl p-8">
+            <!-- Header Actions -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Liste des Médecins</h2>
+                    <p class="text-gray-500 text-sm mt-1">Gérer les comptes utilisateurs du système</p>
+                </div>
+                <button onclick="showCreateModal()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-lg transform hover:scale-105 transition">
+                    <i class="fas fa-plus mr-2"></i>Nouveau Médecin
+                </button>
+            </div>
+
+            <!-- Filter/Search Bar -->
+            <div class="mb-6 flex gap-4">
+                <div class="flex-1">
+                    <input type="text" id="search-input" placeholder="Rechercher par nom, email ou spécialité..." 
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                           oninput="filterDoctors()">
+                </div>
+                <select id="status-filter" class="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" onchange="filterDoctors()">
+                    <option value="all">Tous les statuts</option>
+                    <option value="apte">Apte</option>
+                    <option value="formation_requise">Formation requise</option>
+                    <option value="supervision">Supervision</option>
+                    <option value="non_evalue">Non évalué</option>
+                </select>
+                <button onclick="loadDoctors()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                    <i class="fas fa-sync mr-2"></i>Actualiser
+                </button>
+            </div>
+
+            <!-- Status Message -->
+            <div id="status-message" class="mb-4"></div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Médecin</th>
+                            <th class="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Spécialité</th>
+                            <th class="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Score T-MCQ</th>
+                            <th class="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Statut</th>
+                            <th class="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Dernière Éval.</th>
+                            <th class="px-6 py-4 text-center text-sm font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doctors-table-body" class="divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+                                <p class="text-gray-500">Chargement des données...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Création/Édition -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-6 rounded-t-2xl">
+                <h2 id="modal-title" class="text-2xl font-bold">Créer un nouveau médecin</h2>
+            </div>
+            
+            <form id="doctorForm" class="p-8">
+                <input type="hidden" id="doctor-id" value="">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-user mr-2 text-blue-600"></i>Nom complet *
+                        </label>
+                        <input type="text" id="doctor-name" required 
+                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                               placeholder="Dr. Jean Martin">
+                    </div>
+                    
+                    <div class="col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-envelope mr-2 text-blue-600"></i>Email professionnel *
+                        </label>
+                        <input type="email" id="doctor-email" required 
+                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                               placeholder="dr.jean.martin@tibok.mu">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-stethoscope mr-2 text-blue-600"></i>Spécialité *
+                        </label>
+                        <select id="doctor-specialty" required 
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                            <option value="">-- Choisir une spécialité --</option>
+                            <option value="Médecine Générale">Médecine Générale</option>
+                            <option value="Pédiatrie">Pédiatrie</option>
+                            <option value="Cardiologie">Cardiologie</option>
+                            <option value="Dermatologie">Dermatologie</option>
+                            <option value="Urgences">Urgences</option>
+                            <option value="Gynécologie">Gynécologie</option>
+                            <option value="Psychiatrie">Psychiatrie</option>
+                            <option value="Ophtalmologie">Ophtalmologie</option>
+                            <option value="ORL">ORL</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-id-card mr-2 text-blue-600"></i>Numéro de licence
+                        </label>
+                        <input type="text" id="doctor-license" 
+                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                               placeholder="MU2024001">
+                    </div>
+                    
+                    <div class="col-span-2" id="password-section">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2 text-blue-600"></i>Mot de passe *
+                        </label>
+                        <input type="password" id="doctor-password" required 
+                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                               placeholder="Minimum 8 caractères">
+                        <p class="text-xs text-gray-500 mt-1">Le mot de passe doit contenir au moins 8 caractères</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mt-8">
+                    <button type="submit" class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-lg transform hover:scale-105 transition">
+                        <i class="fas fa-save mr-2"></i><span id="submit-text">Créer le médecin</span>
+                    </button>
+                    <button type="button" onclick="hideModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition">
+                        <i class="fas fa-times mr-2"></i>Annuler
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let allDoctors = [];
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status-message');
+            const colors = {
+                success: 'bg-green-100 border-green-500 text-green-800',
+                error: 'bg-red-100 border-red-500 text-red-800',
+                info: 'bg-blue-100 border-blue-500 text-blue-800'
+            };
+            
+            statusDiv.innerHTML = `
+                <div class="border-l-4 ${colors[type]} p-4 rounded-lg shadow">
+                    <p class="font-medium">${message}</p>
+                </div>
+            `;
+            
+            setTimeout(() => statusDiv.innerHTML = '', 5000);
+        }
+
+        function getStatusBadge(status) {
+            if (!status) return '<span class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm font-semibold"><i class="fas fa-question mr-1"></i>Non évalué</span>';
+            if (status === 'apte') return '<span class="px-3 py-1 bg-green-200 text-green-800 rounded-full text-sm font-semibold"><i class="fas fa-check-circle mr-1"></i>APTE</span>';
+            if (status === 'formation_requise') return '<span class="px-3 py-1 bg-red-200 text-red-800 rounded-full text-sm font-semibold"><i class="fas fa-exclamation-triangle mr-1"></i>Formation</span>';
+            if (status === 'supervision') return '<span class="px-3 py-1 bg-yellow-200 text-yellow-800 rounded-full text-sm font-semibold"><i class="fas fa-user-shield mr-1"></i>Supervision</span>';
+            return status;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        async function loadDoctors() {
+            try {
+                showStatus('Chargement des données...', 'info');
+                const response = await fetch(`${API_BASE}/admin/doctors`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    showStatus('Erreur lors du chargement des données', 'error');
+                    return;
+                }
+
+                allDoctors = data.doctors;
+                displayDoctors(allDoctors);
+                updateStats(allDoctors);
+                showStatus(`${data.count} médecins chargés avec succès`, 'success');
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+                showStatus('Erreur de connexion au serveur', 'error');
+            }
+        }
+
+        function updateStats(doctors) {
+            const total = doctors.length;
+            const apte = doctors.filter(d => d.evaluation_status === 'apte').length;
+            const formation = doctors.filter(d => d.evaluation_status === 'formation_requise').length;
+            
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-apte').textContent = apte;
+            document.getElementById('stat-formation').textContent = formation;
+        }
+
+        function displayDoctors(doctors) {
+            const tbody = document.getElementById('doctors-table-body');
+            
+            if (doctors.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+                            <p class="text-lg">Aucun médecin trouvé</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = doctors.map(doctor => {
+                const score = doctor.tmcq_total ? doctor.tmcq_total.toFixed(1) + '%' : 'N/A';
+                const statusBadge = getStatusBadge(doctor.evaluation_status);
+                const lastEval = formatDate(doctor.last_evaluation_date);
+                
+                return `
+                    <tr class="hover:bg-blue-50 transition">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-3 rounded-full mr-3">
+                                    <i class="fas fa-user-md text-blue-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-900">${doctor.name}</div>
+                                    <div class="text-xs text-gray-500 font-mono">${doctor.id}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${doctor.email}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
+                                ${doctor.specialty || 'N/A'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-lg font-bold ${doctor.tmcq_total >= 85 ? 'text-green-600' : doctor.tmcq_total >= 70 ? 'text-yellow-600' : 'text-red-600'}">
+                                ${score}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">${statusBadge}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${lastEval}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="editDoctor('${doctor.id}')" class="px-3 py-2 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="viewDoctor('${doctor.id}')" class="px-3 py-2 text-green-600 hover:bg-green-100 rounded-lg transition" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="deleteDoctor('${doctor.id}', '${doctor.name}')" class="px-3 py-2 text-red-600 hover:bg-red-100 rounded-lg transition" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterDoctors() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+            
+            let filtered = allDoctors;
+            
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(d => 
+                    d.name.toLowerCase().includes(searchTerm) ||
+                    d.email.toLowerCase().includes(searchTerm) ||
+                    (d.specialty && d.specialty.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Filter by status
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(d => d.evaluation_status === statusFilter);
+            }
+            
+            displayDoctors(filtered);
+        }
+
+        function showCreateModal() {
+            document.getElementById('modal-title').textContent = 'Créer un nouveau médecin';
+            document.getElementById('submit-text').textContent = 'Créer le médecin';
+            document.getElementById('doctor-id').value = '';
+            document.getElementById('doctorForm').reset();
+            document.getElementById('password-section').style.display = 'block';
+            document.getElementById('doctor-password').required = true;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function hideModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('doctorForm').reset();
+        }
+
+        async function editDoctor(doctorId) {
+            try {
+                const doctor = allDoctors.find(d => d.id === doctorId);
+                if (!doctor) {
+                    showStatus('Médecin introuvable', 'error');
+                    return;
+                }
+
+                document.getElementById('modal-title').textContent = 'Modifier le médecin';
+                document.getElementById('submit-text').textContent = 'Enregistrer les modifications';
+                document.getElementById('doctor-id').value = doctor.id;
+                document.getElementById('doctor-name').value = doctor.name;
+                document.getElementById('doctor-email').value = doctor.email;
+                document.getElementById('doctor-specialty').value = doctor.specialty || '';
+                document.getElementById('doctor-license').value = doctor.license_number || '';
+                document.getElementById('password-section').style.display = 'none';
+                document.getElementById('doctor-password').required = false;
+                document.getElementById('modal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error editing doctor:', error);
+                showStatus('Erreur lors de la récupération des données', 'error');
+            }
+        }
+
+        async function deleteDoctor(doctorId, doctorName) {
+            if (!confirm(`⚠️ Êtes-vous sûr de vouloir supprimer le médecin "${doctorName}" ?\n\nCette action est irréversible et supprimera toutes les données associées.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctor/${doctorId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`Médecin "${doctorName}" supprimé avec succès`, 'success');
+                    loadDoctors();
+                } else {
+                    showStatus(data.message || 'Erreur lors de la suppression', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting doctor:', error);
+                showStatus('Erreur de connexion au serveur', 'error');
+            }
+        }
+
+        function viewDoctor(doctorId) {
+            window.open(`/static/doctor-detail.html?id=${doctorId}`, '_blank');
+        }
+
+        document.getElementById('doctorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const doctorId = document.getElementById('doctor-id').value;
+            const isEdit = doctorId !== '';
+            
+            const formData = {
+                name: document.getElementById('doctor-name').value,
+                email: document.getElementById('doctor-email').value,
+                specialty: document.getElementById('doctor-specialty').value,
+                license_number: document.getElementById('doctor-license').value || undefined
+            };
+
+            if (!isEdit) {
+                formData.password = document.getElementById('doctor-password').value;
+            }
+
+            try {
+                const url = isEdit ? `${API_BASE}/admin/doctor/${doctorId}` : `${API_BASE}/admin/doctor`;
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`Médecin ${isEdit ? 'modifié' : 'créé'} avec succès`, 'success');
+                    hideModal();
+                    loadDoctors();
+                } else {
+                    showStatus(data.message || 'Erreur lors de la sauvegarde', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving doctor:', error);
+                showStatus('Erreur de connexion au serveur', 'error');
+            }
+        });
+
+        // Auto-load on page load
+        window.addEventListener('load', () => {
+            loadDoctors();
+        });
+    </script>
+</body>
+</html>

@@ -83,37 +83,60 @@
                 const evaluation = data.evaluation;
                 
                 // Transform QCM options from array to object (A, B, C, D, E)
-                evaluation.qcms = evaluation.qcms.map(qcm => {
-                    const optionsObj = {};
-                    if (Array.isArray(qcm.options)) {
-                        qcm.options.forEach((opt, idx) => {
-                            const letter = String.fromCharCode(65 + idx); // A, B, C, D, E
-                            optionsObj[letter] = opt.replace(/^[A-E]\)\s*/, ''); // Remove "A) " prefix if exists
-                        });
+                console.log('Transforming QCMs...', evaluation.qcms.length);
+                evaluation.qcms = evaluation.qcms.map((qcm, qcmIdx) => {
+                    try {
+                        const optionsObj = {};
+                        if (Array.isArray(qcm.options)) {
+                            qcm.options.forEach((opt, idx) => {
+                                const letter = String.fromCharCode(65 + idx); // A, B, C, D, E
+                                // Ensure opt is a string
+                                const optStr = typeof opt === 'string' ? opt : String(opt);
+                                optionsObj[letter] = optStr.replace(/^[A-E]\)\s*/, ''); // Remove "A) " prefix if exists
+                            });
+                        } else {
+                            console.error('QCM options not array:', qcm.id, typeof qcm.options);
+                            // If options is already an object, use it as-is
+                            optionsObj = qcm.options;
+                        }
+                        return { ...qcm, options: optionsObj };
+                    } catch (err) {
+                        console.error('Error transforming QCM', qcmIdx, err);
+                        throw err;
                     }
-                    return { ...qcm, options: optionsObj };
                 });
                 
                 // Transform clinical cases questions
-                evaluation.cases = evaluation.cases.map(caseItem => {
-                    const transformedQuestions = [];
-                    if (Array.isArray(caseItem.questions) && caseItem.questions.length > 0) {
-                        caseItem.questions.forEach((q, idx) => {
-                            // Validate question structure
-                            if (q && (q.question || q.q)) {
-                                transformedQuestions.push({
-                                    q: q.question || q.q,
-                                    options: {
-                                        'A': 'Oui',
-                                        'B': 'Non',
-                                        'C': 'Partiellement'
-                                    },
-                                    correct: 'A' // Default - will be checked server-side based on text matching
-                                });
-                            }
-                        });
+                console.log('Transforming cases...', evaluation.cases.length);
+                evaluation.cases = evaluation.cases.map((caseItem, caseIdx) => {
+                    try {
+                        const transformedQuestions = [];
+                        console.log(`Case ${caseIdx}: questions type =`, typeof caseItem.questions, Array.isArray(caseItem.questions));
+                        if (Array.isArray(caseItem.questions) && caseItem.questions.length > 0) {
+                            caseItem.questions.forEach((q, idx) => {
+                                // Validate question structure
+                                if (q && (q.question || q.q)) {
+                                    transformedQuestions.push({
+                                        q: q.question || q.q,
+                                        options: {
+                                            'A': 'Oui',
+                                            'B': 'Non',
+                                            'C': 'Partiellement'
+                                        },
+                                        correct: 'A' // Default - will be checked server-side based on text matching
+                                    });
+                                } else {
+                                    console.warn(`Case ${caseIdx}, question ${idx}: invalid structure`, q);
+                                }
+                            });
+                        } else {
+                            console.warn(`Case ${caseIdx}: questions not an array or empty`, caseItem.questions);
+                        }
+                        return { ...caseItem, questions: transformedQuestions };
+                    } catch (err) {
+                        console.error('Error transforming case', caseIdx, err);
+                        throw err;
                     }
-                    return { ...caseItem, questions: transformedQuestions };
                 });
                 
                 // Store transformed evaluation data
@@ -127,20 +150,31 @@
                 }, 500);
                 
             } catch (error) {
-                console.error('Error:', error);
+                console.error('❌ Error:', error);
+                console.error('Stack:', error.stack);
                 errorEl.classList.remove('hidden');
                 
                 // Detailed error message
                 const errorDetails = [
-                    'Message: ' + error.message,
-                    '\nStack: ' + (error.stack || 'N/A'),
-                    '\n\nDébug Info:',
-                    '- Token: ' + (token ? 'Present' : 'Missing'),
-                    '- Response received: ' + (typeof error.response !== 'undefined' ? 'Yes' : 'No')
+                    '❌ Message: ' + error.message,
+                    '',
+                    '📍 Line: ' + (error.lineNumber || 'Unknown'),
+                    '📍 Column: ' + (error.columnNumber || 'Unknown'),
+                    '',
+                    '🔍 Stack Trace:',
+                    error.stack || 'N/A',
+                    '',
+                    '🐛 Debug Info:',
+                    '- Token: ' + (token ? 'Present (length: ' + token.length + ')' : 'Missing'),
+                    '- Window: ' + window.location.href,
+                    '- User Agent: ' + navigator.userAgent.substring(0, 50) + '...'
                 ].join('\n');
                 
                 errorEl.querySelector('pre').textContent = errorDetails;
                 statusEl.textContent = '❌ Erreur lors du chargement de l\'évaluation';
+                
+                // Also alert for visibility
+                alert('❌ Erreur détaillée:\n\n' + error.message + '\n\nVoir la console (F12) pour plus de détails.');
             }
         }
         

@@ -97,17 +97,20 @@
                 // Transform clinical cases questions
                 evaluation.cases = evaluation.cases.map(caseItem => {
                     const transformedQuestions = [];
-                    if (Array.isArray(caseItem.questions)) {
+                    if (Array.isArray(caseItem.questions) && caseItem.questions.length > 0) {
                         caseItem.questions.forEach((q, idx) => {
-                            transformedQuestions.push({
-                                q: q.question,
-                                options: {
-                                    'A': 'Oui',
-                                    'B': 'Non',
-                                    'C': 'Partiellement'
-                                },
-                                correct: 'A' // Default - will be checked server-side based on text matching
-                            });
+                            // Validate question structure
+                            if (q && (q.question || q.q)) {
+                                transformedQuestions.push({
+                                    q: q.question || q.q,
+                                    options: {
+                                        'A': 'Oui',
+                                        'B': 'Non',
+                                        'C': 'Partiellement'
+                                    },
+                                    correct: 'A' // Default - will be checked server-side based on text matching
+                                });
+                            }
                         });
                     }
                     return { ...caseItem, questions: transformedQuestions };
@@ -126,8 +129,18 @@
             } catch (error) {
                 console.error('Error:', error);
                 errorEl.classList.remove('hidden');
-                errorEl.querySelector('pre').textContent = error.message + '\n\n' + (error.stack || '');
-                statusEl.textContent = 'Erreur lors du chargement';
+                
+                // Detailed error message
+                const errorDetails = [
+                    'Message: ' + error.message,
+                    '\nStack: ' + (error.stack || 'N/A'),
+                    '\n\nDébug Info:',
+                    '- Token: ' + (token ? 'Present' : 'Missing'),
+                    '- Response received: ' + (typeof error.response !== 'undefined' ? 'Yes' : 'No')
+                ].join('\n');
+                
+                errorEl.querySelector('pre').textContent = errorDetails;
+                statusEl.textContent = '❌ Erreur lors du chargement de l\'évaluation';
             }
         }
         

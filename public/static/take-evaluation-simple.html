@@ -62,28 +62,48 @@
         let timerInterval = null;
 
         function init() {
-            // Load from sessionStorage
-            const stored = sessionStorage.getItem('current_evaluation');
-            if (!stored) {
-                alert('❌ Aucune évaluation en cours');
+            try {
+                // Load from sessionStorage
+                const stored = sessionStorage.getItem('current_evaluation');
+                if (!stored) {
+                    alert('❌ Aucune évaluation en cours');
+                    window.location.href = '/static/doctor-dashboard.html';
+                    return;
+                }
+
+                evalData = JSON.parse(stored);
+                
+                // Validate data structure
+                if (!evalData || !evalData.name) {
+                    throw new Error('Données d\'évaluation invalides (name manquant)');
+                }
+                
+                if (!Array.isArray(evalData.qcms)) {
+                    throw new Error('QCMs invalides (pas un array)');
+                }
+                
+                if (!Array.isArray(evalData.cases)) {
+                    throw new Error('Cas cliniques invalides (pas un array)');
+                }
+                
+                document.getElementById('eval-title').textContent = evalData.name;
+
+                // Build questions array (QCMs first, then cases)
+                allQuestions = [
+                    ...evalData.qcms.map(q => ({ type: 'qcm', data: q })),
+                    ...evalData.cases.map(c => ({ type: 'case', data: c }))
+                ];
+
+                document.getElementById('total-q').textContent = allQuestions.length;
+                document.getElementById('nav').style.display = 'flex';
+
+                startTimer();
+                displayQuestion();
+            } catch (error) {
+                console.error('Erreur init:', error);
+                alert('❌ Erreur lors du chargement de l\'évaluation:\n' + error.message);
                 window.location.href = '/static/doctor-dashboard.html';
-                return;
             }
-
-            evalData = JSON.parse(stored);
-            document.getElementById('eval-title').textContent = evalData.name;
-
-            // Build questions array (QCMs first, then cases)
-            allQuestions = [
-                ...evalData.qcms.map(q => ({ type: 'qcm', data: q })),
-                ...evalData.cases.map(c => ({ type: 'case', data: c }))
-            ];
-
-            document.getElementById('total-q').textContent = allQuestions.length;
-            document.getElementById('nav').style.display = 'flex';
-
-            startTimer();
-            displayQuestion();
         }
 
         function startTimer() {

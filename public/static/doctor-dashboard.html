@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Dashboard Médecin - Tibok Medical Evaluation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
@@ -304,7 +307,9 @@
 
         function startEvaluation(templateId) {
             // Use start-evaluation-direct.html which handles data transformation
-            window.location.href = `/static/start-evaluation-direct.html`;
+            // Add cache-buster to force browser to reload the latest version
+            const cacheBuster = Date.now();
+            window.location.href = `/static/start-evaluation-direct.html?v=${cacheBuster}`;
         }
 
         function viewResults(evaluationId) {

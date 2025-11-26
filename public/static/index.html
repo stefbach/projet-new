@@ -3,20 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tibok Medical Evaluation - Accueil</title>
+    <title>TIBOK Medical Evaluation - Accueil</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --tibok-blue: #0066CC;
+            --tibok-cyan: #00BCD4;
+            --tibok-green: #00C853;
+        }
+        .bg-tibok-gradient {
+            background: linear-gradient(135deg, var(--tibok-blue) 0%, var(--tibok-cyan) 50%, var(--tibok-green) 100%);
+        }
+        .text-tibok-blue { color: var(--tibok-blue); }
+        .text-tibok-cyan { color: var(--tibok-cyan); }
+        .text-tibok-green { color: var(--tibok-green); }
+        body {
+            background: linear-gradient(135deg, #E3F2FD 0%, #E0F7FA 50%, #E8F5E9 100%);
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 via-white to-indigo-50 min-h-screen">
+<body class="min-h-screen">
     <div class="container mx-auto px-4 py-16">
-        <!-- Header -->
+        <!-- Header avec logo TIBOK -->
         <div class="text-center mb-16">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full mb-6 shadow-lg">
-                <i class="fas fa-user-md text-4xl text-white"></i>
-            </div>
-            <h1 class="text-5xl font-bold text-gray-900 mb-4">Tibok Medical Evaluation</h1>
-            <p class="text-xl text-gray-600">Système d'évaluation médicale IA pour téléconsultation</p>
-            <div class="mt-4 inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full">
+            <img src="/static/tibok-logo.svg" alt="TIBOK Logo" class="h-32 mx-auto mb-6" />
+            <h1 class="text-5xl font-bold text-gray-900 mb-4">TIBOK Medical Evaluation</h1>
+            <p class="text-xl text-gray-700">Système d'évaluation médicale IA pour téléconsultation</p>
+            <div class="mt-4 inline-flex items-center px-4 py-2 rounded-full" style="background-color: #E8F5E9; color: #00C853;">
                 <i class="fas fa-check-circle mr-2"></i>
                 <span class="font-semibold">Système Opérationnel ✅</span>
             </div>
@@ -24,23 +38,23 @@
 
         <!-- Stats Cards -->
         <div class="grid md:grid-cols-4 gap-6 mb-12">
-            <div class="bg-white rounded-xl shadow-md p-6 text-center">
-                <i class="fas fa-users text-4xl text-blue-600 mb-3"></i>
+            <div class="bg-white rounded-xl shadow-md p-6 text-center border-t-4" style="border-color: #0066CC;">
+                <i class="fas fa-users text-4xl mb-3" style="color: #0066CC;"></i>
                 <div class="text-3xl font-bold text-gray-900" id="stat-doctors">5</div>
                 <div class="text-sm text-gray-600">Médecins inscrits</div>
             </div>
-            <div class="bg-white rounded-xl shadow-md p-6 text-center">
-                <i class="fas fa-question-circle text-4xl text-green-600 mb-3"></i>
+            <div class="bg-white rounded-xl shadow-md p-6 text-center border-t-4" style="border-color: #00BCD4;">
+                <i class="fas fa-question-circle text-4xl mb-3" style="color: #00BCD4;"></i>
                 <div class="text-3xl font-bold text-gray-900" id="stat-qcm">6</div>
                 <div class="text-sm text-gray-600">QCM disponibles</div>
             </div>
-            <div class="bg-white rounded-xl shadow-md p-6 text-center">
-                <i class="fas fa-file-medical text-4xl text-purple-600 mb-3"></i>
+            <div class="bg-white rounded-xl shadow-md p-6 text-center border-t-4" style="border-color: #00C853;">
+                <i class="fas fa-file-medical text-4xl mb-3" style="color: #00C853;"></i>
                 <div class="text-3xl font-bold text-gray-900" id="stat-cases">1</div>
                 <div class="text-sm text-gray-600">Cas cliniques</div>
             </div>
-            <div class="bg-white rounded-xl shadow-md p-6 text-center">
-                <i class="fas fa-chart-line text-4xl text-orange-600 mb-3"></i>
+            <div class="bg-white rounded-xl shadow-md p-6 text-center border-t-4" style="border-color: #0066CC;">
+                <i class="fas fa-chart-line text-4xl mb-3" style="color: #0066CC;"></i>
                 <div class="text-3xl font-bold text-gray-900">22</div>
                 <div class="text-sm text-gray-600">Endpoints API</div>
             </div>
@@ -49,28 +63,28 @@
         <!-- Actions -->
         <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
             <!-- Médecins -->
-            <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition">
+            <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition border-t-4" style="border-color: #0066CC;">
                 <div class="text-center mb-6">
-                    <i class="fas fa-stethoscope text-5xl text-blue-600 mb-4"></i>
+                    <i class="fas fa-stethoscope text-5xl mb-4" style="color: #0066CC;"></i>
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Espace Médecins</h2>
                     <p class="text-gray-600">Créez un compte et passez vos évaluations</p>
                 </div>
                 <div class="space-y-3">
-                    <a href="/static/login.html" class="block w-full py-3 px-6 bg-blue-600 text-white text-center rounded-lg font-medium hover:bg-blue-700 transition">
+                    <a href="/static/login" class="block w-full py-3 px-6 text-white text-center rounded-lg font-medium hover:opacity-90 transition bg-tibok-gradient">
                         <i class="fas fa-sign-in-alt mr-2"></i>Se connecter / S'inscrire
                     </a>
                 </div>
             </div>
 
             <!-- Administrateurs -->
-            <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition">
+            <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition border-t-4" style="border-color: #00C853;">
                 <div class="text-center mb-6">
-                    <i class="fas fa-user-shield text-5xl text-red-600 mb-4"></i>
+                    <i class="fas fa-user-shield text-5xl mb-4" style="color: #00C853;"></i>
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Espace Admin</h2>
                     <p class="text-gray-600">Gérez les médecins et les évaluations</p>
                 </div>
                 <div class="space-y-3">
-                    <a href="/static/admin-dashboard-full.html" class="block w-full py-3 px-6 bg-red-600 text-white text-center rounded-lg font-medium hover:bg-red-700 transition">
+                    <a href="/static/admin-dashboard-full" class="block w-full py-3 px-6 text-white text-center rounded-lg font-medium hover:opacity-90 transition" style="background-color: #00C853;">
                         <i class="fas fa-tachometer-alt mr-2"></i>Dashboard Admin
                     </a>
                 </div>
@@ -78,46 +92,46 @@
         </div>
 
         <!-- Features -->
-        <div class="bg-white rounded-xl shadow-lg p-8 max-w-4xl mx-auto mb-12">
+        <div class="bg-white rounded-xl shadow-lg p-8 max-w-4xl mx-auto mb-12 border-t-4" style="border-color: #00BCD4;">
             <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">Fonctionnalités</h3>
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="flex items-start space-x-4">
-                    <i class="fas fa-check-circle text-2xl text-green-600 mt-1"></i>
+                    <i class="fas fa-check-circle text-2xl mt-1" style="color: #00C853;"></i>
                     <div>
                         <h4 class="font-semibold text-gray-900">Authentification JWT</h4>
                         <p class="text-sm text-gray-600">Connexion sécurisée pour médecins et admins</p>
                     </div>
                 </div>
                 <div class="flex items-start space-x-4">
-                    <i class="fas fa-check-circle text-2xl text-green-600 mt-1"></i>
+                    <i class="fas fa-check-circle text-2xl mt-1" style="color: #00C853;"></i>
                     <div>
                         <h4 class="font-semibold text-gray-900">Sessions d'évaluation</h4>
                         <p class="text-sm text-gray-600">QCM, cas cliniques, et évaluations complètes</p>
                     </div>
                 </div>
                 <div class="flex items-start space-x-4">
-                    <i class="fas fa-check-circle text-2xl text-green-600 mt-1"></i>
+                    <i class="fas fa-check-circle text-2xl mt-1" style="color: #00C853;"></i>
                     <div>
                         <h4 class="font-semibold text-gray-900">Scoring T-MCQ</h4>
                         <p class="text-sm text-gray-600">Calcul automatique avec seuils OMS</p>
                     </div>
                 </div>
                 <div class="flex items-start space-x-4">
-                    <i class="fas fa-check-circle text-2xl text-green-600 mt-1"></i>
+                    <i class="fas fa-check-circle text-2xl mt-1" style="color: #00C853;"></i>
                     <div>
                         <h4 class="font-semibold text-gray-900">Génération IA (OpenAI GPT-4)</h4>
                         <p class="text-sm text-gray-600">Contenu médical illimité basé sur guidelines OMS</p>
                     </div>
                 </div>
                 <div class="flex items-start space-x-4">
-                    <i class="fas fa-check-circle text-2xl text-green-600 mt-1"></i>
+                    <i class="fas fa-check-circle text-2xl mt-1" style="color: #00C853;"></i>
                     <div>
                         <h4 class="font-semibold text-gray-900">Base de données D1</h4>
                         <p class="text-sm text-gray-600">SQLite distribuée sur edge Cloudflare</p>
                     </div>
                 </div>
                 <div class="flex items-start space-x-4">
-                    <i class="fas fa-check-circle text-2xl text-green-600 mt-1"></i>
+                    <i class="fas fa-check-circle text-2xl mt-1" style="color: #00C853;"></i>
                     <div>
                         <h4 class="font-semibold text-gray-900">API REST complète</h4>
                         <p class="text-sm text-gray-600">22 endpoints documentés</p>
@@ -127,31 +141,31 @@
         </div>
 
         <!-- API Test -->
-        <div class="bg-gray-900 rounded-xl shadow-lg p-8 max-w-4xl mx-auto">
-            <h3 class="text-2xl font-bold text-white mb-4">Test API</h3>
-            <div class="bg-gray-800 rounded-lg p-4 mb-4">
-                <code class="text-green-400 text-sm">GET /api/health</code>
+        <div class="bg-white rounded-xl shadow-lg p-8 max-w-4xl mx-auto border-t-4" style="border-color: #0066CC;">
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">Test API</h3>
+            <div class="bg-gray-50 rounded-lg p-4 mb-4 border-l-4" style="border-color: #00BCD4;">
+                <code class="text-gray-800 text-sm font-mono">GET /api/health</code>
             </div>
-            <button onclick="testAPI()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">
+            <button onclick="testAPI()" class="px-6 py-3 text-white rounded-lg font-medium hover:opacity-90 transition" style="background-color: #00C853;">
                 <i class="fas fa-play mr-2"></i>Tester l'API
             </button>
             <div id="api-result" class="mt-4 hidden">
-                <div class="bg-gray-800 rounded-lg p-4">
-                    <pre id="api-response" class="text-green-400 text-sm overflow-x-auto"></pre>
+                <div class="bg-gray-50 rounded-lg p-4 border-l-4" style="border-color: #00C853;">
+                    <pre id="api-response" class="text-gray-800 text-sm overflow-x-auto font-mono"></pre>
                 </div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="text-center mt-16 text-gray-600">
-            <p class="mb-2">Tibok Medical Evaluation v1.0.0</p>
+            <p class="mb-2 font-semibold">TIBOK Medical Evaluation v1.2.0</p>
             <p class="text-sm">Basé sur guidelines OMS, WHO EML 2023, Medical Council of Mauritius</p>
             <div class="mt-4 space-x-4">
-                <a href="/static/login.html" class="text-blue-600 hover:underline">Login</a>
+                <a href="/static/login" class="hover:underline" style="color: #0066CC;">Login</a>
                 <span>•</span>
-                <a href="/api/health" class="text-blue-600 hover:underline" target="_blank">API Health</a>
+                <a href="/api/health" class="hover:underline" style="color: #0066CC;" target="_blank">API Health</a>
                 <span>•</span>
-                <a href="/static/basic-admin.html" class="text-blue-600 hover:underline">Dashboard Admin</a>
+                <a href="/static/admin-dashboard-full" class="hover:underline" style="color: #0066CC;">Dashboard Admin</a>
             </div>
         </div>
     </div>

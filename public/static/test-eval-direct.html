@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Test Évaluation</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Direct Évaluation</h1>
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            output.appendChild(div);
+        }
+
+        async function test() {
+            try {
+                log('1️⃣ Login...', 'info');
+                
+                const loginResp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'dr.jean.martin@tibok.mu',
+                        password: 'password123'
+                    })
+                });
+                
+                const loginData = await loginResp.json();
+                if (!loginData.success) throw new Error('Login failed');
+                
+                log('✅ Login OK - Token obtenu', 'success');
+                const token = loginData.token;
+                
+                log('2️⃣ Chargement évaluation...', 'info');
+                
+                const evalResp = await fetch('/api/evaluations/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ template_id: 'eval-test-001' })
+                });
+                
+                const evalData = await evalResp.json();
+                
+                if (!evalData.success) {
+                    throw new Error(evalData.error || 'Failed to load evaluation');
+                }
+                
+                log('✅ Évaluation chargée', 'success');
+                
+                const eval_info = evalData.evaluation;
+                log(`📊 Nom: ${eval_info.name}`, 'info');
+                log(`📊 QCMs: ${eval_info.qcms.length}, Cas: ${eval_info.cases.length}`, 'info');
+                
+                // Check data structure
+                const qcm0 = eval_info.qcms[0];
+                const case0 = eval_info.cases[0];
+                
+                log(`🔍 Type QCM options: ${typeof qcm0.options} - IsArray: ${Array.isArray(qcm0.options)}`, 'info');
+                log(`🔍 Type Case questions: ${typeof case0.questions} - IsArray: ${Array.isArray(case0.questions)}`, 'info');
+                log(`🔍 Type Case anamnesis: ${typeof case0.anamnesis}`, 'info');
+                
+                // Show first QCM options
+                log('📝 Premier QCM options:', 'info');
+                const pre1 = document.createElement('pre');
+                pre1.textContent = JSON.stringify(qcm0.options, null, 2);
+                output.appendChild(pre1);
+                
+                // Show first case structure
+                log('📝 Premier cas structure:', 'info');
+                const pre2 = document.createElement('pre');
+                pre2.textContent = JSON.stringify({
+                    title: case0.title,
+                    anamnesis: case0.anamnesis,
+                    questions_count: case0.questions?.length,
+                    first_question: case0.questions?.[0]
+                }, null, 2);
+                output.appendChild(pre2);
+                
+                log('✅ TEST COMPLET RÉUSSI - Données OK', 'success');
+                log('🚀 Vous pouvez maintenant passer à l\'évaluation complète', 'success');
+                
+            } catch (error) {
+                log('❌ ERREUR: ' + error.message, 'error');
+                const pre = document.createElement('pre');
+                pre.textContent = error.stack || 'No stack trace';
+                output.appendChild(pre);
+            }
+        }
+        
+        test();
+    </script>
+</body>
+</html>

@@ -20,6 +20,20 @@ const app = new Hono<{ Bindings: Bindings }>()
 // CORS pour API
 app.use('/api/*', cors())
 
+// Custom middleware to redirect old evaluation URLs BEFORE serveStatic
+app.use('/static/*', async (c, next) => {
+  const path = c.req.path
+  
+  // Redirect old evaluation URLs to new one
+  if (path === '/static/take-evaluation' || path === '/static/take-evaluation.html') {
+    console.log(`🔄 Redirecting ${path} to start-evaluation-direct.html`)
+    return c.redirect('/static/start-evaluation-direct.html', 301)
+  }
+  
+  // Continue to serveStatic for all other paths
+  await next()
+})
+
 // Serve static files
 app.use('/static/*', serveStatic({ root: './public' }))
 

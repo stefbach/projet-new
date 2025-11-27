@@ -424,6 +424,47 @@ admin.delete('/doctor/:doctorId', async (c) => {
 })
 
 /**
+ * PUT /api/admin/doctor/:doctorId/password
+ * Réinitialiser le mot de passe d'un médecin
+ */
+admin.put('/doctor/:doctorId/password', async (c) => {
+  try {
+    const doctorId = c.req.param('doctorId')
+    const { new_password } = await c.req.json()
+
+    // Validation
+    if (!new_password || new_password.length < 8) {
+      return c.json({ 
+        success: false,
+        message: 'Le mot de passe doit contenir au moins 8 caractères' 
+      }, 400)
+    }
+
+    // Import hashPassword from auth lib
+    const { hashPassword } = await import('../lib/auth')
+    const password_hash = await hashPassword(new_password)
+
+    // Update password
+    await c.env.DB.prepare(`
+      UPDATE doctors
+      SET password_hash = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(password_hash, doctorId).run()
+
+    return c.json({
+      success: true,
+      message: 'Mot de passe réinitialisé avec succès'
+    })
+  } catch (error: any) {
+    console.error('Reset Password Error:', error)
+    return c.json({ 
+      success: false,
+      message: error.message || 'Erreur lors de la réinitialisation du mot de passe' 
+    }, 500)
+  }
+})
+
+/**
  * GET /api/admin/ranking
  * Classement des médecins par score T-MCQ
  */

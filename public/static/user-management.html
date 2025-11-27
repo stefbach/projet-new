@@ -152,6 +152,58 @@
         </div>
     </div>
 
+    <!-- Modal Réinitialisation Mot de Passe -->
+    <div id="password-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-6 rounded-t-2xl">
+                <h2 class="text-2xl font-bold"><i class="fas fa-key mr-2"></i>Réinitialiser le mot de passe</h2>
+            </div>
+            
+            <form id="passwordForm" class="p-8">
+                <input type="hidden" id="reset-doctor-id" value="">
+                
+                <div class="mb-6">
+                    <p class="text-gray-700 mb-4">
+                        Vous êtes sur le point de réinitialiser le mot de passe de :
+                    </p>
+                    <div class="bg-blue-50 border-l-4 border-tibok-blue p-4 rounded">
+                        <p class="font-bold text-gray-900" id="reset-doctor-name"></p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-2 text-purple-600"></i>Nouveau mot de passe *
+                    </label>
+                    <input type="password" id="new-password" required minlength="8"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                           placeholder="Minimum 8 caractères">
+                    <p class="text-xs text-gray-500 mt-1">Le mot de passe doit contenir au moins 8 caractères</p>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-2 text-purple-600"></i>Confirmer le mot de passe *
+                    </label>
+                    <input type="password" id="confirm-password" required minlength="8"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                           placeholder="Confirmer le mot de passe">
+                </div>
+
+                <div id="password-error" class="hidden mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-800 rounded"></div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 font-medium shadow-lg transform hover:scale-105 transition">
+                        <i class="fas fa-check mr-2"></i>Réinitialiser
+                    </button>
+                    <button type="button" onclick="hidePasswordModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition">
+                        <i class="fas fa-times mr-2"></i>Annuler
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Création/Édition -->
     <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-y-auto">
@@ -350,6 +402,9 @@
                                 <button onclick="editDoctor('${doctor.id}')" class="px-3 py-2 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </button>
+                                <button onclick="showResetPasswordModal('${doctor.id}', '${doctor.name}')" class="px-3 py-2 text-purple-600 hover:bg-purple-100 rounded-lg transition" title="Réinitialiser mot de passe">
+                                    <i class="fas fa-key"></i>
+                                </button>
                                 <button onclick="viewDoctor('${doctor.id}')" class="px-3 py-2 text-green-600 hover:bg-green-100 rounded-lg transition" title="Voir détails">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -490,6 +545,64 @@
             } catch (error) {
                 console.error('Error saving doctor:', error);
                 showStatus('Erreur de connexion au serveur', 'error');
+            }
+        });
+
+        // Password Reset Modal Functions
+        function showResetPasswordModal(doctorId, doctorName) {
+            document.getElementById('reset-doctor-id').value = doctorId;
+            document.getElementById('reset-doctor-name').textContent = doctorName;
+            document.getElementById('passwordForm').reset();
+            document.getElementById('password-error').classList.add('hidden');
+            document.getElementById('password-modal').classList.remove('hidden');
+        }
+
+        function hidePasswordModal() {
+            document.getElementById('password-modal').classList.add('hidden');
+            document.getElementById('passwordForm').reset();
+        }
+
+        // Handle Password Reset Form
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const doctorId = document.getElementById('reset-doctor-id').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorDiv = document.getElementById('password-error');
+            
+            // Validation
+            if (newPassword.length < 8) {
+                errorDiv.textContent = 'Le mot de passe doit contenir au moins 8 caractères';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                errorDiv.textContent = 'Les mots de passe ne correspondent pas';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctor/${doctorId}/password`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('Mot de passe réinitialisé avec succès', 'success');
+                    hidePasswordModal();
+                } else {
+                    errorDiv.textContent = data.message || 'Erreur lors de la réinitialisation';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error resetting password:', error);
+                errorDiv.textContent = 'Erreur de connexion au serveur';
+                errorDiv.classList.remove('hidden');
             }
         });
 

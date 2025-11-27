@@ -710,7 +710,7 @@
                         datasets: [{
                             data: [
                                 statusCounts.apte,
-                                statusCounts.supervision_requise,
+                                statusCounts.supervision,
                                 statusCounts.formation_requise,
                                 statusCounts.non_évalué
                             ],
@@ -1507,7 +1507,7 @@
         function getStatusBadge(status) {
             if (status === 'apte') {
                 return '<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ Apte</span>';
-            } else if (status === 'supervision_requise') {
+            } else if (status === 'supervision') {
                 return '<span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⚠️ Supervision</span>';
             } else if (status === 'formation_requise') {
                 return '<span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">❌ Formation</span>';

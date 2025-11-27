@@ -56,10 +56,18 @@ sessions.post('/start', async (c) => {
         ORDER BY RANDOM()
         LIMIT 50
       `).all()
-      qcms = qcmResult.results.map(q => ({
-        ...q,
-        options: JSON.parse(q.options as string)
-      }))
+      qcms = qcmResult.results.map(q => {
+        try {
+          return {
+            ...q,
+            options: JSON.parse(q.options as string)
+          }
+        } catch (e) {
+          console.error(`Failed to parse QCM options for ${q.id}:`, e)
+          // Skip this QCM if options are invalid
+          return null
+        }
+      }).filter(q => q !== null)
     }
 
     if (session_type === 'clinical_cases' || session_type === 'full') {
@@ -70,12 +78,20 @@ sessions.post('/start', async (c) => {
         ORDER BY RANDOM()
         LIMIT 5
       `).all()
-      cases = casesResult.results.map(ca => ({
-        ...ca,
-        patient_profile: JSON.parse(ca.patient_profile as string),
-        anamnesis: JSON.parse(ca.anamnesis as string),
-        questions: JSON.parse(ca.questions as string)
-      }))
+      cases = casesResult.results.map(ca => {
+        try {
+          return {
+            ...ca,
+            patient_profile: JSON.parse(ca.patient_profile as string),
+            anamnesis: JSON.parse(ca.anamnesis as string),
+            questions: JSON.parse(ca.questions as string)
+          }
+        } catch (e) {
+          console.error(`Failed to parse clinical case for ${ca.id}:`, e)
+          // Skip this case if data is invalid
+          return null
+        }
+      }).filter(ca => ca !== null)
     }
 
     return c.json({

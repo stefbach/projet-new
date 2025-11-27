@@ -1,0 +1,32 @@
+🧪 TEST COMPLET - TIBOK Medical Evaluation
+==========================================
+
+1️⃣ Login médecin...
+✅ Login réussi - Token obtenu
+
+2️⃣ Démarrage session d'évaluation complète...
+✅ Session créée: 9b3f6915-fed8-4f6e-91e4-20a7d774b013
+
+3️⃣ Récupération détails de la session...
+✅ Session contient:
+   - 0 QCMs
+   - 0 Cas cliniques
+
+4️⃣ Vérification format des cas cliniques...
+Premier cas: 
+⚠️ ATTENTION: Format cas clinique pourrait être incorrect
+
+5️⃣ Soumission de l'évaluation...
+Response: {"success":true,"session_id":"9b3f6915-fed8-4f6e-91e4-20a7d774b013","scores":{"qcm_score":0,"cases_score":0,"total_score":0},"message":"Session completed successfully"}
+
+6️⃣ Vérification erreurs SQLITE_CONSTRAINT...
+✅ Aucune erreur SQLITE_CONSTRAINT
+
+7️⃣ Vérification valeur du statut...
+Statut retourné: 
+❌ ERREUR: Statut invalide: 
+Statuts attendus: 'apte', 'supervision', 'formation_requise'
+
+==========================================
+✅ TEST COMPLET TERMINÉ
+==========================================

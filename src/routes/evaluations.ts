@@ -393,7 +393,7 @@ evaluations.get('/:id/narrative-report', async (c) => {
       actionPlan.shortTerm.push('Compléter le module de formation obligatoire (durée estimée: 2-4 semaines)')
       actionPlan.shortTerm.push('Passer une réévaluation complète')
       actionPlan.longTerm.push('Continuer la formation continue avec évaluations trimestrielles')
-    } else if (evaluation.status === 'supervision_requise') {
+    } else if (evaluation.status === 'supervision') {
       actionPlan.immediate.push('Exercer uniquement sous supervision d\'un médecin expérimenté')
       actionPlan.shortTerm.push('Améliorer les compétences identifiées comme faibles (4-8 semaines)')
       actionPlan.shortTerm.push('Documenter 20 cas supervisés avec feedback')
@@ -512,7 +512,7 @@ function generateNarrativeConclusion(
   
   if (evaluation.status === 'apte') {
     conclusion += `Le médecin est **APTE** à pratiquer la téléconsultation. Une évaluation annuelle est recommandée pour maintenir les compétences.`
-  } else if (evaluation.status === 'supervision_requise') {
+  } else if (evaluation.status === 'supervision') {
     conclusion += `Le médecin nécessite une **SUPERVISION** durant sa pratique. Une réévaluation est recommandée après une période de formation ciblée de 3 mois.`
   } else {
     conclusion += `Le médecin nécessite une **FORMATION INTENSIVE** avant de pratiquer la téléconsultation. Une formation complète suivie d'une réévaluation complète est obligatoire.`
@@ -759,10 +759,10 @@ evaluations.post('/submit', async (c) => {
     // Calculate T-MCQ (weighted average: QCM 40%, Cases 60%)
     const tmcqScore = Math.round((qcmScore * 0.4) + (caseScore * 0.6))
     
-    // Determine status
+    // Determine status (MUST match DB constraint: 'apte', 'supervision', 'formation_requise')
     let status = 'formation_requise'
     if (tmcqScore >= 75) status = 'apte'
-    else if (tmcqScore >= 60) status = 'supervision_requise'
+    else if (tmcqScore >= 60) status = 'supervision'  // FIX: was 'supervision_requise' - DB expects 'supervision'
     
     // Save to database
     const resultId = `eval-result-${Date.now()}`

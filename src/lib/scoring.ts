@@ -41,14 +41,14 @@ export function calculateTMCQ(
     communication * TMCQ_WEIGHTS.communication
   )
 
-  // Détermination du status
+  // Détermination du status (IMPORTANT: Must match DB constraint: 'apte', 'supervision', 'formation_requise')
   let status: 'apte' | 'supervision' | 'formation_requise'
   if (total >= TMCQ_THRESHOLDS.apte) {
     status = 'apte'
   } else if (total >= TMCQ_THRESHOLDS.supervision) {
-    status = 'supervision'
+    status = 'supervision'  // Doit correspondre EXACTEMENT à la contrainte DB
   } else {
-    status = 'formation_requise'
+    status = 'formation_requise'  // Doit correspondre EXACTEMENT à la contrainte DB
   }
 
   return {

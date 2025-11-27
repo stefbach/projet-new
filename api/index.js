@@ -1,34 +1,36 @@
-// Vercel Serverless Function Entry Point
-// This file adapts the Hono app for Vercel's serverless environment
+// ⚠️ AVERTISSEMENT : Ce fichier ne fonctionnera PAS complètement sur Vercel
+// car votre projet utilise Cloudflare D1 (base de données SQLite)
+// Vercel ne supporte pas D1.
 
-import app from '../dist/_worker.js'
+// Pour utiliser Vercel, vous devez :
+// 1. Migrer D1 → Vercel Postgres (2-3 jours)
+// 2. Réécrire toutes les requêtes SQL (84 occurrences)
+// 3. Payer pour Vercel Postgres ($20-50/mois)
+
+// Ce fichier sert uniquement à éviter l'erreur de build Vercel
+// Mais l'application NE FONCTIONNERA PAS sans base de données
 
 export default async function handler(req, res) {
-  try {
-    // Convert Vercel request to Web Request
-    const url = new URL(req.url, `https://${req.headers.host}`)
-    
-    const request = new Request(url, {
-      method: req.method,
-      headers: new Headers(req.headers),
-      body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined
-    })
-
-    // Call Hono app
-    const response = await app.fetch(request)
-
-    // Convert Web Response to Vercel response
-    const body = await response.text()
-    
-    res.status(response.status)
-    
-    response.headers.forEach((value, key) => {
-      res.setHeader(key, value)
-    })
-    
-    res.send(body)
-  } catch (error) {
-    console.error('Vercel handler error:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+  // Vérifier si c'est une route API
+  if (req.url.startsWith('/api/health')) {
+    return res.status(200).json({
+      status: 'error',
+      message: 'Ce projet utilise Cloudflare D1 qui n\'est pas compatible avec Vercel',
+      recommendation: 'Utilisez Cloudflare Pages à la place',
+      deployment_guide: 'Voir GUIDE_DEPLOIEMENT_COMPLET.md',
+      cloudflare_deploy: './deploy.sh'
+    });
   }
+
+  // Pour toutes les autres routes
+  return res.status(503).json({
+    error: 'Service Unavailable',
+    message: 'Cette application nécessite Cloudflare D1 et ne peut pas fonctionner sur Vercel',
+    solution: 'Déployez sur Cloudflare Pages avec ./deploy.sh',
+    documentation: [
+      'GUIDE_DEPLOIEMENT_COMPLET.md',
+      'GUIDE_RAPIDE_DEPLOY.md',
+      'SUPPRESSION_VERCEL.md'
+    ]
+  });
 }

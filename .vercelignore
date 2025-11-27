@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+.npm
+
+# Build outputs
+.wrangler
+.mf
+
+# Local env files
+.dev.vars
+.env
+.env.local
+.env.production
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+
+# PM2
+.pm2
+pids
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Git
+.git
+
+# Tests
+coverage
+*.test.js
+
+# Documentation
+*.md
+!README.md

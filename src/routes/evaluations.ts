@@ -299,6 +299,17 @@ evaluations.get('/:id/narrative-report', async (c) => {
       improvementSuggestions.push('Formation pratique intensive sur des cas réels supervisés')
     }
     
+    // Ajouter suggestions générales
+    if (strongAreas.length === 0) {
+      strongAreas.push('Points forts à développer avec la pratique')
+    }
+    if (weakAreas.length === 0) {
+      weakAreas.push('Performance globalement satisfaisante')
+    }
+    if (improvementSuggestions.length === 0) {
+      improvementSuggestions.push('Maintenir un niveau de formation continue')
+    }
+    
     // Score T-MCQ global
     const tmcqScore = evaluation.tmcq_total || 0
     

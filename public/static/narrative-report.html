@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport d'Évaluation Formatif - TIBOK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --tibok-blue: #0066CC;
+            --tibok-cyan: #00BCD4;
+            --tibok-green: #00C853;
+        }
+        .bg-tibok-gradient {
+            background: linear-gradient(135deg, var(--tibok-blue) 0%, var(--tibok-cyan) 50%, var(--tibok-green) 100%);
+        }
+        @media print {
+            .no-print { display: none; }
+            body { background: white; }
+        }
+        .narrative-text {
+            line-height: 1.8;
+            text-align: justify;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-tibok-gradient text-white shadow-xl no-print">
+        <div class="container mx-auto px-6 py-5">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <img src="/static/tibok-logo.svg" alt="TIBOK Logo" class="h-16" />
+                    <div>
+                        <h1 class="text-3xl font-bold">Rapport d'Évaluation Formatif</h1>
+                        <p class="text-cyan-100 text-sm">TIBOK Medical Evaluation System</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.print()" class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                        <i class="fas fa-print mr-2"></i>Imprimer
+                    </button>
+                    <button onclick="downloadPDF()" class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                        <i class="fas fa-file-pdf mr-2"></i>Télécharger PDF
+                    </button>
+                    <button onclick="goBack()" class="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Retour
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <div id="report-content" class="bg-white rounded-xl shadow-2xl p-12">
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-5xl text-blue-600 mb-4"></i>
+                <p class="text-xl text-gray-700">Génération du rapport en cours...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '/api';
+        const token = localStorage.getItem('doctor_token');
+        
+        if (!token) {
+            window.location.href = '/static/login';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const evaluationId = urlParams.get('id');
+
+        if (!evaluationId) {
+            alert('❌ ID d\'évaluation manquant');
+            history.back();
+        }
+
+        async function loadNarrativeReport() {
+            try {
+                const response = await fetch(`${API_BASE}/evaluations/${evaluationId}/narrative-report`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('❌ Impossible de générer le rapport');
+                    history.back();
+                    return;
+                }
+
+                displayReport(data.report);
+
+            } catch (error) {
+                console.error('Error loading report:', error);
+                alert('❌ Erreur lors de la génération du rapport');
+            }
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'apte': '<span class="px-6 py-3 bg-green-100 text-green-800 rounded-full text-lg font-bold"><i class="fas fa-check-circle mr-2"></i>APTE</span>',
+                'supervision_requise': '<span class="px-6 py-3 bg-yellow-100 text-yellow-800 rounded-full text-lg font-bold"><i class="fas fa-user-shield mr-2"></i>SUPERVISION REQUISE</span>',
+                'formation_requise': '<span class="px-6 py-3 bg-red-100 text-red-800 rounded-full text-lg font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>FORMATION REQUISE</span>'
+            };
+            return badges[status] || badges['formation_requise'];
+        }
+
+        function getCompetenceBadge(level) {
+            const badges = {
+                'Expert': 'bg-green-600 text-white',
+                'Compétent': 'bg-blue-600 text-white',
+                'En développement': 'bg-yellow-600 text-white',
+                'Débutant': 'bg-red-600 text-white'
+            };
+            const bgClass = badges[level] || 'bg-gray-600 text-white';
+            return `<span class="px-4 py-2 ${bgClass} rounded-lg text-sm font-semibold">${level}</span>`;
+        }
+
+        function displayReport(report) {
+            const container = document.getElementById('report-content');
+            
+            const conclusion = report.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
+            container.innerHTML = `
+                <!-- En-tête du rapport -->
+                <div class="border-b-4 border-blue-600 pb-6 mb-8">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                                Rapport d'Évaluation Formatif et Narratif
+                            </h1>
+                            <p class="text-gray-600">TIBOK Medical Evaluation System - Téléconsultation</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">Date du rapport</p>
+                            <p class="text-lg font-semibold">${new Date().toLocaleDateString('fr-FR')}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations du médecin -->
+                <div class="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-6 mb-8">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-user-md mr-2 text-blue-600"></i>Informations du Médecin
+                    </h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Nom complet</p>
+                            <p class="text-lg font-semibold text-gray-900">${report.doctor.name}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Spécialité</p>
+                            <p class="text-lg font-semibold text-gray-900">${report.doctor.specialty}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Email</p>
+                            <p class="text-lg font-semibold text-gray-900">${report.doctor.email}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Date d'évaluation</p>
+                            <p class="text-lg font-semibold text-gray-900">${new Date(report.evaluation_date).toLocaleDateString('fr-FR')}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scores et Statut -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Scores -->
+                    <div class="bg-white border-2 border-gray-200 rounded-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-chart-bar mr-2 text-purple-600"></i>Résultats Chiffrés
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">Score T-MCQ Global</span>
+                                <span class="text-2xl font-bold text-blue-600">${report.scores.tmcq.toFixed(1)}%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">QCM (Théorie)</span>
+                                <span class="text-xl font-bold text-purple-600">${report.scores.qcm.toFixed(0)}% (${report.scores.qcm_details})</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">Cas Cliniques</span>
+                                <span class="text-xl font-bold text-orange-600">${report.scores.clinical_cases.toFixed(0)}% (${report.scores.case_details})</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statut et Niveau -->
+                    <div class="bg-white border-2 border-gray-200 rounded-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-certificate mr-2 text-green-600"></i>Statut et Niveau de Compétence
+                        </h3>
+                        <div class="text-center mb-4">
+                            ${getStatusBadge(report.status)}
+                        </div>
+                        <div class="text-center mb-4">
+                            <p class="text-sm text-gray-600 mb-2">Niveau de compétence</p>
+                            ${getCompetenceBadge(report.competence_level)}
+                        </div>
+                        <p class="text-sm text-gray-700 text-center italic mt-4">
+                            ${report.competence_description}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Analyse Détaillée -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-gray-200 pb-2">
+                        <i class="fas fa-microscope mr-2 text-blue-600"></i>Analyse Détaillée des Performances
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Points Forts -->
+                        <div class="bg-green-50 border-l-4 border-green-500 rounded-lg p-6">
+                            <h3 class="text-lg font-bold text-green-800 mb-3">
+                                <i class="fas fa-check-circle mr-2"></i>Points Forts
+                            </h3>
+                            ${report.analysis.strong_areas.length > 0 ? `
+                                <ul class="space-y-2">
+                                    ${report.analysis.strong_areas.map(area => `
+                                        <li class="flex items-start">
+                                            <i class="fas fa-star text-green-600 mr-2 mt-1"></i>
+                                            <span class="text-gray-800">${area}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : '<p class="text-gray-600 italic">Aucun point fort identifié à ce stade</p>'}
+                        </div>
+
+                        <!-- Points Faibles -->
+                        <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-6">
+                            <h3 class="text-lg font-bold text-red-800 mb-3">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>Points à Améliorer
+                            </h3>
+                            ${report.analysis.weak_areas.length > 0 ? `
+                                <ul class="space-y-2">
+                                    ${report.analysis.weak_areas.map(area => `
+                                        <li class="flex items-start">
+                                            <i class="fas fa-arrow-right text-red-600 mr-2 mt-1"></i>
+                                            <span class="text-gray-800">${area}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : '<p class="text-gray-600 italic">Aucun point faible majeur identifié</p>'}
+                            ${report.analysis.red_flags_missed > 0 ? `
+                                <div class="mt-4 p-3 bg-red-100 border border-red-300 rounded">
+                                    <p class="text-red-800 font-semibold">
+                                        <i class="fas fa-flag mr-2"></i>
+                                        ${report.analysis.red_flags_missed} drapeaux rouges manqués
+                                    </p>
+                                    <p class="text-sm text-red-700 mt-1">Attention critique requise sur l'identification des urgences</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommandations -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-gray-200 pb-2">
+                        <i class="fas fa-lightbulb mr-2 text-yellow-600"></i>Recommandations et Axes d'Amélioration
+                    </h2>
+                    
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-bold text-yellow-800 mb-3">Recommandations Principales</h3>
+                        ${report.recommendations.length > 0 ? `
+                            <ol class="space-y-3">
+                                ${report.recommendations.map((rec, idx) => `
+                                    <li class="flex items-start">
+                                        <span class="flex-shrink-0 w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold mr-3">${idx + 1}</span>
+                                        <span class="text-gray-800 pt-1">${rec}</span>
+                                    </li>
+                                `).join('')}
+                            </ol>
+                        ` : '<p class="text-gray-600 italic">Aucune recommandation spécifique</p>'}
+                    </div>
+
+                    <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-blue-800 mb-3">Suggestions d'Amélioration</h3>
+                        ${report.improvement_suggestions.length > 0 ? `
+                            <ul class="space-y-2">
+                                ${report.improvement_suggestions.map(sug => `
+                                    <li class="flex items-start">
+                                        <i class="fas fa-angle-double-right text-blue-600 mr-2 mt-1"></i>
+                                        <span class="text-gray-800">${sug}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        ` : '<p class="text-gray-600 italic">Aucune suggestion spécifique</p>'}
+                    </div>
+                </div>
+
+                <!-- Objectifs d'Apprentissage -->
+                ${report.learning_objectives.length > 0 ? `
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-gray-200 pb-2">
+                            <i class="fas fa-bullseye mr-2 text-purple-600"></i>Objectifs d'Apprentissage
+                        </h2>
+                        <div class="bg-purple-50 border-l-4 border-purple-500 rounded-lg p-6">
+                            <ul class="space-y-3">
+                                ${report.learning_objectives.map(obj => `
+                                    <li class="flex items-start">
+                                        <i class="fas fa-target text-purple-600 mr-3 mt-1"></i>
+                                        <span class="text-gray-800">${obj}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Plan d'Action -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-gray-200 pb-2">
+                        <i class="fas fa-tasks mr-2 text-green-600"></i>Plan d'Action Structuré
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Actions Immédiates -->
+                        <div class="bg-red-50 border-2 border-red-200 rounded-lg p-5">
+                            <h3 class="text-md font-bold text-red-800 mb-3 flex items-center">
+                                <i class="fas fa-bolt mr-2"></i>Actions Immédiates
+                            </h3>
+                            ${report.action_plan.immediate.length > 0 ? `
+                                <ul class="space-y-2 text-sm">
+                                    ${report.action_plan.immediate.map(action => `
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-red-500 mr-2 mt-1 text-xs"></i>
+                                            <span class="text-gray-800">${action}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : '<p class="text-sm text-gray-600 italic">Aucune action immédiate requise</p>'}
+                        </div>
+
+                        <!-- Actions Court Terme -->
+                        <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-5">
+                            <h3 class="text-md font-bold text-yellow-800 mb-3 flex items-center">
+                                <i class="fas fa-clock mr-2"></i>Court Terme (1-3 mois)
+                            </h3>
+                            ${report.action_plan.shortTerm.length > 0 ? `
+                                <ul class="space-y-2 text-sm">
+                                    ${report.action_plan.shortTerm.map(action => `
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-yellow-500 mr-2 mt-1 text-xs"></i>
+                                            <span class="text-gray-800">${action}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : '<p class="text-sm text-gray-600 italic">Aucune action court terme</p>'}
+                        </div>
+
+                        <!-- Actions Long Terme -->
+                        <div class="bg-green-50 border-2 border-green-200 rounded-lg p-5">
+                            <h3 class="text-md font-bold text-green-800 mb-3 flex items-center">
+                                <i class="fas fa-calendar-alt mr-2"></i>Long Terme (3-12 mois)
+                            </h3>
+                            ${report.action_plan.longTerm.length > 0 ? `
+                                <ul class="space-y-2 text-sm">
+                                    ${report.action_plan.longTerm.map(action => `
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-green-500 mr-2 mt-1 text-xs"></i>
+                                            <span class="text-gray-800">${action}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : '<p class="text-sm text-gray-600 italic">Aucune action long terme</p>'}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conclusion Narrative -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-gray-200 pb-2">
+                        <i class="fas fa-file-alt mr-2 text-blue-600"></i>Conclusion et Synthèse Narrative
+                    </h2>
+                    <div class="bg-gray-50 border-2 border-gray-300 rounded-lg p-8">
+                        <div class="narrative-text text-gray-800 text-base leading-relaxed">
+                            ${conclusion}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signature et Validation -->
+                <div class="border-t-2 border-gray-300 pt-6 mt-8">
+                    <div class="grid grid-cols-2 gap-8">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-2">Rapport généré par</p>
+                            <p class="text-lg font-bold text-gray-900">Système TIBOK Medical Evaluation</p>
+                            <p class="text-sm text-gray-600 mt-1">Date: ${new Date().toLocaleString('fr-FR')}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-600 mb-2">ID d'évaluation</p>
+                            <p class="text-lg font-mono text-gray-900">${report.evaluation_id}</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <p class="text-xs text-gray-600 text-center">
+                            Ce rapport est confidentiel et destiné uniquement au médecin évalué et aux responsables de formation. 
+                            Il constitue un outil de développement professionnel dans le cadre de l'amélioration continue de la qualité des soins.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function goBack() {
+            if (document.referrer) {
+                history.back();
+            } else {
+                window.location.href = '/static/doctor-dashboard';
+            }
+        }
+
+        function downloadPDF() {
+            window.print();
+        }
+
+        // Charger le rapport au chargement de la page
+        window.addEventListener('load', () => {
+            loadNarrativeReport();
+        });
+    </script>
+</body>
+</html>

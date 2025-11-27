@@ -759,10 +759,15 @@ evaluations.post('/submit', async (c) => {
     // Calculate T-MCQ (weighted average: QCM 40%, Cases 60%)
     const tmcqScore = Math.round((qcmScore * 0.4) + (caseScore * 0.6))
     
-    // Determine status (MUST match DB constraint: 'apte', 'supervision', 'formation_requise')
+    // Determine status for doctors_evaluations table (uses 'supervision')
     let status = 'formation_requise'
     if (tmcqScore >= 75) status = 'apte'
-    else if (tmcqScore >= 60) status = 'supervision'  // FIX: was 'supervision_requise' - DB expects 'supervision'
+    else if (tmcqScore >= 60) status = 'supervision'
+    
+    // Determine status for doctors table (uses 'supervision_requise')
+    let doctorStatus = 'formation_requise'
+    if (tmcqScore >= 75) doctorStatus = 'apte'
+    else if (tmcqScore >= 60) doctorStatus = 'supervision_requise'
     
     // Save to database
     const resultId = `eval-result-${Date.now()}`
@@ -772,14 +777,14 @@ evaluations.post('/submit', async (c) => {
       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
     `).bind(resultId, doctorId, qcmScore, caseScore, tmcqScore, status).run()
     
-    // Update doctor's latest scores
+    // Update doctor's latest scores (uses doctorStatus for doctors.evaluation_status)
     await c.env.DB.prepare(`
       UPDATE doctors 
       SET tmcq_total = ?,
           evaluation_status = ?,
           last_evaluation_date = datetime('now')
       WHERE id = ?
-    `).bind(tmcqScore, status, doctorId).run()
+    `).bind(tmcqScore, doctorStatus, doctorId).run()
     
     return c.json({
       success: true,

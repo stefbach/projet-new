@@ -119,14 +119,18 @@
                             caseItem.questions.forEach((q, idx) => {
                                 // Validate question structure
                                 if (q && (q.question || q.q)) {
+                                    // Use existing options if available, otherwise create default
+                                    const options = q.options || {
+                                        'A': 'Option A',
+                                        'B': 'Option B',
+                                        'C': 'Option C',
+                                        'D': 'Option D'
+                                    };
+                                    
                                     transformedQuestions.push({
                                         q: q.question || q.q,
-                                        options: {
-                                            'A': 'Oui',
-                                            'B': 'Non',
-                                            'C': 'Partiellement'
-                                        },
-                                        correct: 'A' // Default - will be checked server-side based on text matching
+                                        options: options,
+                                        correct: q.correct || 'A'
                                     });
                                 } else {
                                     console.warn(`Case ${caseIdx}, question ${idx}: invalid structure`, q);

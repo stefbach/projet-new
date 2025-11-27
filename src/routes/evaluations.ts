@@ -267,27 +267,17 @@ evaluations.get('/:id/narrative-report', async (c) => {
       return c.json({ error: 'Evaluation not found' }, 404)
     }
     
-    // Récupérer les réponses détaillées
-    const responses = await c.env.DB.prepare(`
-      SELECT * FROM evaluation_responses
-      WHERE evaluation_id = ?
-      ORDER BY question_order
-    `).bind(evaluationId).all()
+    // Note: evaluation_responses table doesn't exist yet
+    // Using simpler analysis based on scores from evaluation
+    const qcmScore = evaluation.qcm_score || 0
+    const caseScore = evaluation.clinical_cases_score || 0
     
-    // Analyser les performances
-    const qcmResponses = responses.results.filter((r: any) => r.question_type === 'qcm')
-    const caseResponses = responses.results.filter((r: any) => r.question_type === 'clinical_case')
-    
-    // Identifier les points forts et faibles
+    // Identifier les points forts et faibles basé sur les scores
     const strongAreas: string[] = []
     const weakAreas: string[] = []
     const improvementSuggestions: string[] = []
     
     // Analyser QCM
-    const qcmCorrect = qcmResponses.filter((r: any) => r.is_correct === 1).length
-    const qcmTotal = qcmResponses.length
-    const qcmScore = qcmTotal > 0 ? (qcmCorrect / qcmTotal) * 100 : 0
-    
     if (qcmScore >= 80) {
       strongAreas.push('Excellente maîtrise des connaissances théoriques')
     } else if (qcmScore >= 60) {
@@ -299,10 +289,6 @@ evaluations.get('/:id/narrative-report', async (c) => {
     }
     
     // Analyser cas cliniques
-    const caseCorrect = caseResponses.filter((r: any) => r.is_correct === 1).length
-    const caseTotal = caseResponses.length
-    const caseScore = caseTotal > 0 ? (caseCorrect / caseTotal) * 100 : 0
-    
     if (caseScore >= 80) {
       strongAreas.push('Excellente capacité de raisonnement clinique')
     } else if (caseScore >= 60) {
@@ -311,16 +297,6 @@ evaluations.get('/:id/narrative-report', async (c) => {
     } else {
       weakAreas.push('Difficultés dans le raisonnement clinique appliqué')
       improvementSuggestions.push('Formation pratique intensive sur des cas réels supervisés')
-    }
-    
-    // Analyser les drapeaux rouges si disponibles
-    const redFlagsMissed = caseResponses.filter((r: any) => 
-      !r.is_correct && r.question_text && r.question_text.toLowerCase().includes('red flag')
-    ).length
-    
-    if (redFlagsMissed > 0) {
-      weakAreas.push(`${redFlagsMissed} drapeaux rouges manqués`)
-      improvementSuggestions.push('Formation spécifique sur l\'identification des signes d\'alerte critiques')
     }
     
     // Score T-MCQ global
@@ -362,10 +338,8 @@ evaluations.get('/:id/narrative-report', async (c) => {
       recommendations.push('Observer des consultations de médecins expérimentés')
     }
     
-    if (redFlagsMissed > 0) {
-      recommendations.push('Formation spécifique sur l\'identification des urgences médicales')
-      recommendations.push('Réviser les critères de référence vers les urgences')
-    }
+    // Red flags analysis removed temporarily (requires evaluation_responses table)
+    // TODO: Re-enable when detailed response tracking is implemented
     
     // Objectifs d\'apprentissage
     const learningObjectives: string[] = []
@@ -423,8 +397,8 @@ evaluations.get('/:id/narrative-report', async (c) => {
           tmcq: tmcqScore,
           qcm: qcmScore,
           clinical_cases: caseScore,
-          qcm_details: `${qcmCorrect}/${qcmTotal}`,
-          case_details: `${caseCorrect}/${caseTotal}`
+          qcm_details: 'Détails non disponibles',  // TODO: Implement when evaluation_responses exists
+          case_details: 'Détails non disponibles'  // TODO: Implement when evaluation_responses exists
         },
         
         // Statut et niveau
@@ -436,7 +410,7 @@ evaluations.get('/:id/narrative-report', async (c) => {
         analysis: {
           strong_areas: strongAreas,
           weak_areas: weakAreas,
-          red_flags_missed: redFlagsMissed
+          red_flags_missed: 0  // TODO: Implement when evaluation_responses table exists
         },
         
         // Recommandations

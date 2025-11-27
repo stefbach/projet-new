@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - Tibok Medical Evaluation</title>
+    <title>Connexion - TIBOK Medical Evaluation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -21,227 +21,173 @@
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <!-- Logo / Header -->
         <div class="text-center mb-8">
             <img src="/static/tibok-logo.svg" alt="TIBOK Logo" class="h-20 mx-auto mb-4" />
-            <h1 class="text-2xl font-bold text-gray-900">TIBOK Medical Evaluation</h1>
-            <p class="text-gray-600 mt-2">Système d'évaluation médicale</p>
-        </div>
-
-        <!-- Tabs -->
-        <div class="flex border-b border-gray-200 mb-6">
-            <button onclick="showTab('login')" id="tab-login-btn" class="flex-1 py-2 px-4 text-center font-medium border-b-2" style="border-color: #0066CC; color: #0066CC;">
-                Connexion
-            </button>
-            <button onclick="showTab('register')" id="tab-register-btn" class="flex-1 py-2 px-4 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
-                Inscription
-            </button>
+            <h1 class="text-2xl font-bold text-gray-900">Connexion</h1>
+            <p class="text-gray-600 mt-2">TIBOK Medical Evaluation System</p>
         </div>
 
         <!-- Login Form -->
-        <form id="login-form" class="space-y-4">
+        <form id="login-form" class="space-y-5">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fas fa-envelope mr-2" style="color: #0066CC;"></i>Email
+                </label>
                 <input type="email" id="login-email" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="dr.martin@tibok.mu">
+                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition"
+                    placeholder="Votre adresse email">
             </div>
+            
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fas fa-lock mr-2" style="color: #0066CC;"></i>Mot de passe
+                </label>
                 <input type="password" id="login-password" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="••••••••">
+                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition"
+                    placeholder="Votre mot de passe">
             </div>
-            <button type="submit" 
-                class="w-full py-3 bg-tibok-gradient text-white rounded-lg font-medium hover:opacity-90 transition">
+
+            <!-- Message d'erreur/succès -->
+            <div id="message" class="hidden rounded-lg p-3 text-sm"></div>
+
+            <button type="submit" id="login-btn"
+                class="w-full py-3 bg-tibok-gradient text-white rounded-lg font-medium hover:opacity-90 transition shadow-lg transform hover:scale-105">
                 <i class="fas fa-sign-in-alt mr-2"></i>Se connecter
             </button>
         </form>
 
-        <!-- Register Form (hidden by default) -->
-        <form id="register-form" class="space-y-4 hidden">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
-                <input type="text" id="register-name" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Dr. Jean Martin">
+        <!-- Informations de connexion -->
+        <div class="mt-8 p-4 bg-blue-50 rounded-lg border-l-4" style="border-color: #0066CC;">
+            <p class="text-sm font-semibold text-gray-800 mb-2">
+                <i class="fas fa-info-circle mr-2" style="color: #0066CC;"></i>Comptes de test
+            </p>
+            <div class="space-y-2 text-xs text-gray-700">
+                <div class="bg-white p-2 rounded">
+                    <p class="font-semibold" style="color: #0066CC;">👨‍⚕️ Compte Médecin</p>
+                    <p class="font-mono">dr.jean.martin@tibok.mu</p>
+                    <p class="font-mono">password123</p>
+                </div>
+                <div class="bg-white p-2 rounded">
+                    <p class="font-semibold" style="color: #00C853;">🛡️ Compte Admin</p>
+                    <p class="font-mono">admin@tibok.mu</p>
+                    <p class="font-mono">password123</p>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" id="register-email" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="dr.martin@tibok.mu">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-                <input type="password" id="register-password" required minlength="8"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Minimum 8 caractères">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Spécialité</label>
-                <input type="text" id="register-specialty"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Médecine Générale">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Numéro de licence (optionnel)</label>
-                <input type="text" id="register-license"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="MMC-2020-1234">
-            </div>
-            <button type="submit" 
-                class="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">
-                <i class="fas fa-user-plus mr-2"></i>Créer un compte
-            </button>
-        </form>
+        </div>
 
-        <!-- Message -->
-        <div id="message" class="mt-4 hidden"></div>
-
-        <!-- Admin Link -->
-        <div class="mt-6 text-center text-sm text-gray-600">
-            Administrateur ? 
-            <a href="/" class="text-blue-600 hover:underline">Accéder au dashboard admin</a>
+        <!-- Retour à l'accueil -->
+        <div class="mt-6 text-center">
+            <a href="/" class="text-sm hover:underline" style="color: #0066CC;">
+                <i class="fas fa-arrow-left mr-1"></i>Retour à l'accueil
+            </a>
         </div>
     </div>
 
     <script>
-        const API_BASE = '/api'
+        const API_BASE = '/api';
 
-        // Tab management
-        function showTab(tab) {
-            const loginForm = document.getElementById('login-form')
-            const registerForm = document.getElementById('register-form')
-            const loginBtn = document.getElementById('tab-login-btn')
-            const registerBtn = document.getElementById('tab-register-btn')
-
-            if (tab === 'login') {
-                loginForm.classList.remove('hidden')
-                registerForm.classList.add('hidden')
-                loginBtn.classList.add('border-blue-600', 'text-blue-600')
-                loginBtn.classList.remove('border-transparent', 'text-gray-500')
-                registerBtn.classList.remove('border-blue-600', 'text-blue-600')
-                registerBtn.classList.add('border-transparent', 'text-gray-500')
-            } else {
-                loginForm.classList.add('hidden')
-                registerForm.classList.remove('hidden')
-                registerBtn.classList.add('border-blue-600', 'text-blue-600')
-                registerBtn.classList.remove('border-transparent', 'text-gray-500')
-                loginBtn.classList.remove('border-blue-600', 'text-blue-600')
-                loginBtn.classList.add('border-transparent', 'text-gray-500')
-            }
-        }
-
-        // Show message
+        // Fonction pour afficher les messages
         function showMessage(text, type = 'error') {
-            const msg = document.getElementById('message')
-            msg.className = `mt-4 p-4 rounded-lg ${type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'}`
-            msg.textContent = text
-            msg.classList.remove('hidden')
+            const messageDiv = document.getElementById('message');
+            messageDiv.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800', 'bg-blue-100', 'text-blue-800');
             
-            setTimeout(() => msg.classList.add('hidden'), 5000)
+            if (type === 'error') {
+                messageDiv.classList.add('bg-red-100', 'text-red-800');
+            } else if (type === 'success') {
+                messageDiv.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                messageDiv.classList.add('bg-blue-100', 'text-blue-800');
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} mr-2"></i>
+                    <span>${text}</span>
+                </div>
+            `;
+            messageDiv.classList.remove('hidden');
         }
 
-        // Login
+        // Gestion de la soumission du formulaire
         document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault()
-            const btn = e.target.querySelector('button[type="submit"]')
-            btn.disabled = true
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Connexion...'
-
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            
+            // Désactiver le bouton pendant la requête
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Connexion en cours...';
+            showMessage('Vérification des identifiants...', 'info');
+            
             try {
                 const response = await fetch(`${API_BASE}/auth/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: document.getElementById('login-email').value,
-                        password: document.getElementById('login-password').value
-                    })
-                })
-
-                const data = await response.json()
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Échec de la connexion')
-                }
-
-                // Store token
-                localStorage.setItem('doctor_token', data.token)
-                localStorage.setItem('tibok_token', data.token)
-                localStorage.setItem('tibok_user', JSON.stringify(data.doctor))
-
-                showMessage('Connexion réussie ! Redirection...', 'success')
-
-                // Redirect based on role
-                setTimeout(() => {
-                    if (data.doctor.role === 'admin') {
-                        window.location.href = '/'
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    // Stocker le token
+                    localStorage.setItem('doctor_token', data.token);
+                    
+                    // Récupérer les informations du médecin pour connaître son rôle
+                    const profileResponse = await fetch(`${API_BASE}/doctors/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${data.token}`
+                        }
+                    });
+                    
+                    const profileData = await profileResponse.json();
+                    
+                    if (profileData.success && profileData.doctor) {
+                        const role = profileData.doctor.role || 'doctor';
+                        const name = profileData.doctor.name;
+                        
+                        showMessage(`✓ Connexion réussie ! Bienvenue ${name}`, 'success');
+                        
+                        // Redirection selon le rôle
+                        setTimeout(() => {
+                            if (role === 'admin') {
+                                // Rediriger vers le dashboard admin
+                                window.location.href = '/static/admin-dashboard-full';
+                            } else {
+                                // Rediriger vers le dashboard médecin
+                                window.location.href = '/static/doctor-dashboard';
+                            }
+                        }, 1000);
                     } else {
-                        window.location.href = '/static/doctor-dashboard.html'
+                        showMessage('Erreur lors de la récupération du profil', 'error');
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Se connecter';
                     }
-                }, 1000)
-            } catch (error) {
-                showMessage(error.message)
-            } finally {
-                btn.disabled = false
-                btn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Se connecter'
-            }
-        })
-
-        // Register
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault()
-            const btn = e.target.querySelector('button[type="submit"]')
-            btn.disabled = true
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Création...'
-
-            try {
-                const response = await fetch(`${API_BASE}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: document.getElementById('register-name').value,
-                        email: document.getElementById('register-email').value,
-                        password: document.getElementById('register-password').value,
-                        specialty: document.getElementById('register-specialty').value,
-                        license_number: document.getElementById('register-license').value
-                    })
-                })
-
-                const data = await response.json()
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Échec de l\'inscription')
+                } else {
+                    showMessage(data.message || '❌ Email ou mot de passe incorrect', 'error');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Se connecter';
                 }
-
-                // Store token
-                localStorage.setItem('tibok_token', data.token)
-                localStorage.setItem('tibok_user', JSON.stringify(data.doctor))
-
-                showMessage('Compte créé ! Redirection...', 'success')
-
-                setTimeout(() => {
-                    window.location.href = '/static/doctor-dashboard.html'
-                }, 1000)
             } catch (error) {
-                showMessage(error.message)
-            } finally {
-                btn.disabled = false
-                btn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Créer un compte'
+                console.error('Login error:', error);
+                showMessage('❌ Erreur de connexion au serveur', 'error');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Se connecter';
             }
-        })
+        });
 
-        // Check if already logged in
-        if (localStorage.getItem('tibok_token')) {
-            const user = JSON.parse(localStorage.getItem('tibok_user') || '{}')
-            if (user.role === 'admin') {
-                window.location.href = '/'
-            } else {
-                window.location.href = '/static/doctor-dashboard.html'
+        // Auto-remplissage pour faciliter les tests (à supprimer en production)
+        document.getElementById('login-email').addEventListener('focus', function() {
+            if (!this.value) {
+                // Vous pouvez pré-remplir avec un compte par défaut
+                // this.value = 'admin@tibok.mu';
             }
-        }
+        });
     </script>
 </body>
 </html>

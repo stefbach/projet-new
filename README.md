@@ -50,6 +50,15 @@
 - **Évaluation automatique** : Calcul des scores et détermination du statut
 - **📖 Guide complet** : Voir [GUIDE_EVALUATION_REPONSES.md](./GUIDE_EVALUATION_REPONSES.md)
 
+### ✅ Déploiement en Production (NOUVEAU)
+- **Script automatique** : `./deploy.sh` pour déploiement en 5 minutes
+- **Cloudflare Pages** : Configuration complète pour production
+- **Base D1 Production** : Migrations automatisées
+- **Domaine personnalisé** : Support SSL/TLS automatique
+- **CI/CD GitHub Actions** : Déploiement continu
+- **📖 Guide complet** : Voir [GUIDE_DEPLOIEMENT_COMPLET.md](./GUIDE_DEPLOIEMENT_COMPLET.md)
+- **⚡ Guide rapide** : Voir [DEPLOIEMENT_RAPIDE.md](./DEPLOIEMENT_RAPIDE.md)
+
 ### ✅ Base de données
 - Schéma complet avec 12 tables optimisées
 - Index pour performance

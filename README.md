@@ -23,12 +23,14 @@
 
 ### ✅ Système d'évaluation (100% fonctionnel)
 - **QCM médicaux** : 13 QCM + génération IA illimitée (strictement 1 par clic)
-- **Cas cliniques** : 8 cas cliniques + génération IA illimitée (strictement 1 par clic)
+- **Cas cliniques** : 9 cas cliniques + génération IA illimitée (strictement 1 par clic)
 - **Templates d'évaluation** : Création personnalisée (sélection QCM/cas, durée, score minimum)
 - **Passage d'évaluation** : Timer, navigation, auto-soumission
+- **✅ RÉPONSES INTERACTIVES** : Les médecins peuvent donner leurs réponses aux QCM (A/B/C/D/E) et aux cas cliniques (A/B/C/D) via une interface complète
 - **Scoring T-MCQ** : Calcul automatique pondéré (QCM 40%, Cas 60%)
 - **Statuts TIBOK** : APTE (≥75%), SUPERVISION_REQUISE (60-74%), FORMATION_REQUISE (<60%)
 - **Page résultats détaillée** : Scores, détails par question, recommandations
+- **Rapport narratif formatif** : Génération automatique avec analyse des forces/faiblesses
 
 ### ✅ Gestion médecins (CRUD complet)
 - Création avec génération d'ID unique
@@ -37,16 +39,30 @@
 - Historique des évaluations par médecin
 - Système de ranking par score T-MCQ
 
+### ✅ Interface d'évaluation interactive (NOUVEAU)
+- **Questions QCM** : Affichage avec options A/B/C/D/E, sélection interactive
+- **Cas cliniques** : Présentation du cas (patient, symptômes) + questions multiples avec options A/B/C/D
+- **Sauvegarde automatique** : Chaque réponse est immédiatement enregistrée
+- **Navigation fluide** : Boutons Précédent/Suivant pour naviguer entre les questions
+- **Timer** : Compte à rebours avec durée configurable (défaut: 60 min)
+- **Barre de progression** : Visualisation de l'avancement (Question X sur Y)
+- **Soumission complète** : Envoi de toutes les réponses à la fin
+- **Évaluation automatique** : Calcul des scores et détermination du statut
+- **📖 Guide complet** : Voir [GUIDE_EVALUATION_REPONSES.md](./GUIDE_EVALUATION_REPONSES.md)
+
 ### ✅ Base de données
 - Schéma complet avec 12 tables optimisées
 - Index pour performance
 - Migrations versionnées (0001-0005)
-- Données de test (5 comptes dont 3 médecins avec évaluations, 13 QCM, 8 cas cliniques)
+- Données de test (5 comptes dont 3 médecins avec évaluations, 13 QCM, 9 cas cliniques)
 
 ## 🚀 URLs et accès
 
 ### URLs actuelles
 - **Dashboard Admin** : https://3000-i74jz396v7wfa24ul9ju2-cbeee0f9.sandbox.novita.ai
+- **Login Unifié** : https://3000-i74jz396v7wfa24ul9ju2-cbeee0f9.sandbox.novita.ai/static/login
+- **Démarrer Évaluation** : https://3000-i74jz396v7wfa24ul9ju2-cbeee0f9.sandbox.novita.ai/static/start-evaluation-direct.html
+- **Passer Évaluation** : https://3000-i74jz396v7wfa24ul9ju2-cbeee0f9.sandbox.novita.ai/static/take-evaluation-simple.html
 - **API Health Check** : https://3000-i74jz396v7wfa24ul9ju2-cbeee0f9.sandbox.novita.ai/api/health
 - **API Base** : https://3000-i74jz396v7wfa24ul9ju2-cbeee0f9.sandbox.novita.ai/api
 
@@ -59,6 +75,9 @@
 - `GET /api/generate/clinical-case/random` - Récupérer un cas clinique aléatoire
 
 #### Évaluation
+- `POST /api/evaluations/start` - Démarrer une session d'évaluation
+- `POST /api/evaluations/submit` - Soumettre les réponses d'évaluation (QCM + cas cliniques)
+- `GET /api/evaluations/:id/narrative-report` - Obtenir le rapport narratif formatif
 - `POST /api/evaluate/consultation` - Auditer une téléconsultation
 - `POST /api/evaluate/qcm` - Enregistrer une réponse QCM
 - `POST /api/evaluate/clinical-case` - Évaluer une tentative de cas clinique

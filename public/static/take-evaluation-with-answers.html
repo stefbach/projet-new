@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Évaluation avec Réponses - TIBOK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold" id="eval-title">Évaluation TIBOK avec Corrections</h1>
+                    <p class="text-cyan-100">Question <span id="current-q">1</span> sur <span id="total-q">0</span></p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="score-display" class="px-4 py-2 bg-white bg-opacity-20 rounded-lg font-bold">
+                        <i class="fas fa-check-circle mr-2"></i>Score: <span id="current-score">0/0</span>
+                    </div>
+                    <button onclick="finishEval()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                        <i class="fas fa-flag-checkered mr-2"></i>Terminer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Progress -->
+    <div class="w-full bg-gray-300 h-2">
+        <div id="progress" class="bg-green-500 h-2 transition-all" style="width: 0%"></div>
+    </div>
+
+    <!-- Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        <!-- Question Container -->
+        <div id="question-container" class="bg-white rounded-xl shadow-xl p-8 mb-6">
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-5xl text-blue-600 mb-4"></i>
+                <p class="text-xl text-gray-700">Chargement de l'évaluation...</p>
+            </div>
+        </div>
+
+        <!-- Answer Feedback (Initially Hidden) -->
+        <div id="feedback-container" class="hidden bg-white rounded-xl shadow-xl p-8 mb-6">
+            <!-- Feedback will be displayed here -->
+        </div>
+
+        <!-- Navigation -->
+        <div id="nav" class="flex justify-between items-center" style="display:none;">
+            <button onclick="prev()" id="prev-btn" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-arrow-left mr-2"></i>Précédent
+            </button>
+            
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Répondez puis cliquez sur "Valider" pour voir la correction</p>
+            </div>
+
+            <button onclick="next()" id="next-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Suivant<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let allQuestions = [];
+        let currentIndex = 0;
+        let answers = {};
+        let correctCount = 0;
+        let totalAnswered = 0;
+        let answerValidated = false;
+
+        function init() {
+            try {
+                const stored = sessionStorage.getItem('current_evaluation');
+                if (!stored) {
+                    alert('❌ Aucune évaluation en cours');
+                    window.location.href = '/static/doctor-dashboard.html';
+                    return;
+                }
+
+                const evalData = JSON.parse(stored);
+                document.getElementById('eval-title').textContent = evalData.name || 'Évaluation TIBOK';
+
+                // Build questions array
+                allQuestions = [
+                    ...evalData.qcms.map(q => ({ type: 'qcm', data: q })),
+                    ...evalData.cases.map(c => ({ type: 'case', data: c }))
+                ];
+
+                document.getElementById('total-q').textContent = allQuestions.length;
+                document.getElementById('nav').style.display = 'flex';
+
+                displayQuestion();
+            } catch (error) {
+                console.error('Erreur init:', error);
+                alert('❌ Erreur lors du chargement: ' + error.message);
+            }
+        }
+
+        function displayQuestion() {
+            const q = allQuestions[currentIndex];
+            const container = document.getElementById('question-container');
+            const feedbackContainer = document.getElementById('feedback-container');
+            
+            // Reset validation state
+            answerValidated = false;
+            feedbackContainer.classList.add('hidden');
+            
+            document.getElementById('current-q').textContent = currentIndex + 1;
+            const progress = ((currentIndex + 1) / allQuestions.length) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+
+            if (q.type === 'qcm') {
+                displayQCM(q.data, container);
+            } else {
+                displayCase(q.data, container);
+            }
+
+            updateNav();
+        }
+
+        function displayQCM(qcm, container) {
+            const saved = answers[`qcm_${qcm.id}`];
+            
+            container.innerHTML = `
+                <div class="mb-6">
+                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                        <i class="fas fa-question-circle mr-2"></i>QCM - ${qcm.topic}
+                    </span>
+                    <span class="ml-2 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                        Difficulté: ${qcm.difficulty}
+                    </span>
+                </div>
+                
+                <h2 class="text-2xl font-bold text-gray-900 mb-8">${qcm.question}</h2>
+                
+                <div class="space-y-3">
+                    ${Object.entries(qcm.options).map(([key, val]) => `
+                        <label class="flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50 ${saved === key ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}">
+                            <input type="radio" name="answer" value="${key}" ${saved === key ? 'checked' : ''}
+                                onchange="saveAnswer('qcm_${qcm.id}', '${key}', '${qcm.correct_answer}')" 
+                                class="mt-1 mr-4 w-5 h-5">
+                            <div>
+                                <span class="font-bold text-blue-600 text-lg">${key}.</span>
+                                <span class="text-gray-800 ml-2">${val}</span>
+                            </div>
+                        </label>
+                    `).join('')}
+                </div>
+
+                <div class="mt-8 flex justify-center">
+                    <button onclick="validateAnswer()" id="validate-btn" 
+                        class="px-8 py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 font-bold text-lg shadow-lg">
+                        <i class="fas fa-check mr-2"></i>Valider ma réponse
+                    </button>
+                </div>
+            `;
+        }
+
+        function displayCase(caseData, container) {
+            container.innerHTML = `
+                <div class="mb-6">
+                    <span class="px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
+                        <i class="fas fa-user-injured mr-2"></i>Cas Clinique - ${caseData.specialty}
+                    </span>
+                </div>
+                
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">${caseData.title}</h2>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-600 p-6 mb-6 rounded-r-lg">
+                    <p class="text-gray-800 leading-relaxed">${caseData.presentation}</p>
+                </div>
+
+                ${caseData.questions && caseData.questions.length > 0 ? caseData.questions.map((sq, idx) => {
+                    const saved = answers[`case_${caseData.id}_q${idx}`];
+                    return `
+                        <div class="border-t-2 border-gray-200 pt-6 mt-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                                <i class="fas fa-question-circle text-purple-600 mr-2"></i>
+                                Question ${idx + 1}: ${sq.q}
+                            </h3>
+                            <div class="space-y-3">
+                                ${Object.entries(sq.options).map(([key, val]) => `
+                                    <label class="flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all hover:border-purple-400 hover:bg-purple-50 ${saved === key ? 'border-purple-600 bg-purple-50' : 'border-gray-200'}">
+                                        <input type="radio" name="case_q${idx}" value="${key}" ${saved === key ? 'checked' : ''}
+                                            onchange="saveAnswer('case_${caseData.id}_q${idx}', '${key}', '${sq.correct}')" 
+                                            class="mt-1 mr-4 w-5 h-5">
+                                        <div>
+                                            <span class="font-bold text-purple-600 text-lg">${key}.</span>
+                                            <span class="text-gray-800 ml-2">${val}</span>
+                                        </div>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('') : ''}
+
+                <div class="mt-8 flex justify-center">
+                    <button onclick="validateAnswer()" id="validate-btn" 
+                        class="px-8 py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 font-bold text-lg shadow-lg">
+                        <i class="fas fa-check mr-2"></i>Valider mes réponses
+                    </button>
+                </div>
+            `;
+        }
+
+        function saveAnswer(qId, answer, correctAnswer) {
+            answers[qId] = {
+                selected: answer,
+                correct: correctAnswer
+            };
+        }
+
+        function validateAnswer() {
+            if (answerValidated) return;
+            
+            const q = allQuestions[currentIndex];
+            const feedbackContainer = document.getElementById('feedback-container');
+            
+            let html = '<div class="space-y-4">';
+            let isCorrect = true;
+
+            if (q.type === 'qcm') {
+                const qcm = q.data;
+                const answerData = answers[`qcm_${qcm.id}`];
+                
+                if (!answerData) {
+                    alert('⚠️ Veuillez sélectionner une réponse');
+                    return;
+                }
+
+                const correct = answerData.selected === answerData.correct;
+                isCorrect = correct;
+
+                if (correct) {
+                    correctCount++;
+                }
+                totalAnswered++;
+
+                html += `
+                    <div class="${correct ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'} border-l-4 p-6 rounded-r-lg">
+                        <div class="flex items-center mb-4">
+                            <i class="fas ${correct ? 'fa-check-circle text-green-600' : 'fa-times-circle text-red-600'} text-3xl mr-3"></i>
+                            <h3 class="text-xl font-bold ${correct ? 'text-green-800' : 'text-red-800'}">
+                                ${correct ? '✅ Bonne réponse !' : '❌ Réponse incorrecte'}
+                            </h3>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <p class="text-gray-700 mb-2"><strong>Votre réponse:</strong> ${answerData.selected}</p>
+                            ${!correct ? `<p class="text-gray-700 mb-2"><strong class="text-green-700">Réponse correcte:</strong> ${qcm.correct_answer}</p>` : ''}
+                        </div>
+
+                        <div class="bg-white p-4 rounded-lg border border-gray-200">
+                            <p class="font-semibold text-gray-900 mb-2"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Justification:</p>
+                            <p class="text-gray-700 leading-relaxed">${qcm.justification || 'Pas de justification disponible'}</p>
+                        </div>
+
+                        ${qcm.source ? `
+                            <div class="mt-4 text-sm text-gray-600">
+                                <i class="fas fa-book mr-2"></i><strong>Source:</strong> ${qcm.source}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                const caseData = q.data;
+                let allCorrect = true;
+
+                caseData.questions.forEach((sq, idx) => {
+                    const answerData = answers[`case_${caseData.id}_q${idx}`];
+                    
+                    if (!answerData) return;
+
+                    const correct = answerData.selected === answerData.correct;
+                    if (!correct) allCorrect = false;
+
+                    html += `
+                        <div class="${correct ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'} border-l-4 p-6 rounded-r-lg mb-4">
+                            <div class="flex items-center mb-3">
+                                <i class="fas ${correct ? 'fa-check-circle text-green-600' : 'fa-times-circle text-red-600'} text-2xl mr-3"></i>
+                                <h4 class="text-lg font-bold ${correct ? 'text-green-800' : 'text-red-800'}">
+                                    Question ${idx + 1}: ${correct ? 'Correct' : 'Incorrect'}
+                                </h4>
+                            </div>
+                            
+                            <p class="text-gray-700 mb-2"><strong>Votre réponse:</strong> ${answerData.selected}</p>
+                            ${!correct ? `<p class="text-gray-700 mb-2"><strong class="text-green-700">Réponse correcte:</strong> ${sq.correct}</p>` : ''}
+                            
+                            ${sq.rationale ? `
+                                <div class="bg-white p-3 rounded-lg border border-gray-200 mt-3">
+                                    <p class="font-semibold text-gray-900 mb-1"><i class="fas fa-info-circle text-blue-500 mr-2"></i>Explication:</p>
+                                    <p class="text-sm text-gray-700">${sq.rationale}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+
+                    if (correct) correctCount++;
+                    totalAnswered++;
+                });
+
+                isCorrect = allCorrect;
+            }
+
+            html += '</div>';
+            feedbackContainer.innerHTML = html;
+            feedbackContainer.classList.remove('hidden');
+
+            // Update score display
+            document.getElementById('current-score').textContent = `${correctCount}/${totalAnswered}`;
+
+            // Hide validate button
+            document.getElementById('validate-btn').style.display = 'none';
+            
+            answerValidated = true;
+        }
+
+        function updateNav() {
+            document.getElementById('prev-btn').disabled = currentIndex === 0;
+            
+            if (currentIndex === allQuestions.length - 1) {
+                document.getElementById('next-btn').textContent = 'Terminer';
+                document.getElementById('next-btn').onclick = finishEval;
+            } else {
+                document.getElementById('next-btn').textContent = 'Suivant ';
+                document.getElementById('next-btn').innerHTML = 'Suivant<i class="fas fa-arrow-right ml-2"></i>';
+                document.getElementById('next-btn').onclick = next;
+            }
+        }
+
+        function prev() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                displayQuestion();
+            }
+        }
+
+        function next() {
+            if (currentIndex < allQuestions.length - 1) {
+                currentIndex++;
+                displayQuestion();
+            }
+        }
+
+        function finishEval() {
+            const percentage = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
+            
+            if (confirm(`🎉 Évaluation terminée!\n\nScore final: ${correctCount}/${totalAnswered} (${percentage}%)\n\nVoulez-vous retourner au dashboard?`)) {
+                sessionStorage.removeItem('current_evaluation');
+                window.location.href = '/static/doctor-dashboard.html';
+            }
+        }
+
+        function quitEval() {
+            if (confirm('⚠️ Quitter l\'évaluation?')) {
+                window.location.href = '/static/doctor-dashboard.html';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

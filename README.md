@@ -56,8 +56,13 @@
 - **Base D1 Production** : Migrations automatisées
 - **Domaine personnalisé** : Support SSL/TLS automatique
 - **CI/CD GitHub Actions** : Déploiement continu
-- **📖 Guide complet** : Voir [GUIDE_DEPLOIEMENT_COMPLET.md](./GUIDE_DEPLOIEMENT_COMPLET.md)
-- **⚡ Guide rapide** : Voir [DEPLOIEMENT_RAPIDE.md](./DEPLOIEMENT_RAPIDE.md)
+- **📖 Guides disponibles** :
+  - [GUIDE_DEPLOIEMENT_COMPLET.md](./GUIDE_DEPLOIEMENT_COMPLET.md) - Guide détaillé complet
+  - [GUIDE_RAPIDE_DEPLOY.md](./GUIDE_RAPIDE_DEPLOY.md) - Déploiement en 5 minutes
+  - [GITHUB_VERCEL_INTEGRATION.md](./GITHUB_VERCEL_INTEGRATION.md) - GitHub + Vercel/Cloudflare
+  - [GITHUB_DEPLOIEMENT_AUTO.md](./GITHUB_DEPLOIEMENT_AUTO.md) - CI/CD automatique
+  - [DEPLOIEMENT_RAPIDE.md](./DEPLOIEMENT_RAPIDE.md) - Guide rapide Cloudflare
+  - [LIENS_IMPORTANTS.md](./LIENS_IMPORTANTS.md) - Liens et ressources utiles
 
 ### ✅ Base de données
 - Schéma complet avec 12 tables optimisées

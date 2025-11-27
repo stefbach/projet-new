@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIBOK Medical Evaluation - Vercel Deployment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center p-8">
+        <div class="max-w-3xl w-full">
+            <!-- Avertissement Principal -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 mb-8">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-8 w-8 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-medium text-yellow-800">
+                            ⚠️ Déploiement Vercel - Base de Données Non Disponible
+                        </h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p>Cette application utilise <strong>Cloudflare D1</strong> qui n'est pas supporté par Vercel.</p>
+                            <p class="mt-1">Les API ne fonctionneront pas sans base de données.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Principale -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                    TIBOK Medical Evaluation
+                </h1>
+                <p class="text-gray-600 mb-6">
+                    Système d'évaluation des compétences médicales
+                </p>
+
+                <!-- Status API -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold mb-3">Status API</h2>
+                    <div id="api-status" class="p-4 bg-gray-100 rounded">
+                        <p class="text-sm text-gray-500">Vérification en cours...</p>
+                    </div>
+                </div>
+
+                <!-- Solution Recommandée -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-green-900 mb-3">
+                        ✅ Solution Recommandée : Cloudflare Pages
+                    </h2>
+                    <ul class="space-y-2 text-sm text-green-800">
+                        <li>• Code déjà compatible (0 modification)</li>
+                        <li>• Déploiement en 5 minutes</li>
+                        <li>• 100% gratuit (hosting + DB + CDN)</li>
+                        <li>• Base de données D1 fonctionnelle</li>
+                    </ul>
+                    <div class="mt-4 p-3 bg-white rounded border border-green-300">
+                        <code class="text-sm text-gray-800">cd /home/user/webapp && ./deploy.sh</code>
+                    </div>
+                </div>
+
+                <!-- Alternatives -->
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-3">Alternatives</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium text-gray-900">Option 1 : Cloudflare Pages (Recommandé)</h3>
+                            <p class="text-sm text-gray-600">5 minutes • 0€ • Documentation complète</p>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Option 2 : Migration Vercel Postgres</h3>
+                            <p class="text-sm text-gray-600">5-6 jours • $20-50/mois • Réécriture complète</p>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Option 3 : Architecture Hybride</h3>
+                            <p class="text-sm text-gray-600">Vercel (frontend) + Cloudflare (backend)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documentation -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="font-medium text-gray-900 mb-2">📚 Documentation</h3>
+                    <ul class="text-sm text-blue-600 space-y-1">
+                        <li><a href="https://github.com/stefbach/projet-new" target="_blank" class="hover:underline">→ Repository GitHub</a></li>
+                        <li>→ SITUATION_VERCEL.md - Explication complète</li>
+                        <li>→ GUIDE_RAPIDE_DEPLOY.md - Déploiement Cloudflare</li>
+                        <li>→ SUPPRESSION_VERCEL.md - Comment supprimer Vercel</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Vérifier le status de l'API
+        async function checkAPIStatus() {
+            const statusDiv = document.getElementById('api-status');
+            
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                let statusHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <span class="inline-block w-3 h-3 rounded-full ${
+                                data.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                            } mr-2"></span>
+                            <span class="font-medium">${data.status.toUpperCase()}</span>
+                        </div>
+                        <p class="text-sm text-gray-700">${data.message}</p>
+                        ${data.database_status ? `
+                            <p class="text-sm text-red-600">
+                                <strong>Base de données:</strong> ${data.database_status}
+                            </p>
+                        ` : ''}
+                        ${data.reason ? `
+                            <p class="text-sm text-gray-600">
+                                <strong>Raison:</strong> ${data.reason}
+                            </p>
+                        ` : ''}
+                    </div>
+                `;
+                
+                statusDiv.innerHTML = statusHTML;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="flex items-center text-red-600">
+                        <span class="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                        <span class="font-medium">ERROR</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">
+                        Impossible de contacter l'API: ${error.message}
+                    </p>
+                `;
+            }
+        }
+
+        // Vérifier au chargement
+        checkAPIStatus();
+    </script>
+</body>
+</html>
